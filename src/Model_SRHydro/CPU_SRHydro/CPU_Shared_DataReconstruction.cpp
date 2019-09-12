@@ -742,7 +742,7 @@ void SRHydro_HancockPredict( real fc[][NCOMP_TOTAL], const real dt, const real d
 // check the negative density and energy
    for (int f=0; f<6; f++)
    {
-      if ( SRHydro_CheckUnphysical( fc[f], NULL, Gamma, MinTemp, __FUNCTION__, __LINE__, true ) )
+      if ( SRHydro_CheckUnphysical( fc[f], NULL, Gamma, MinTemp, __FUNCTION__, __LINE__, false ) )
       {
 //       set to the cell-centered values before update
          for (int f=0; f<6; f++)
