@@ -190,6 +190,72 @@ real SRHydro_GetTemperature (const real Dens, const real MomX, const real MomY, 
   return root;
 }				// FUNCTION : SRHydro_GetTemperature
 
+GPU_DEVICE static
+real f_prim_Mignone(real R, real D, real M, real Eprim, real Gamma)
+{
+     real u2=SQR(M)/(SQR(R+D)-SQR(M)); 
+     real lor=SQRT((real)1+u2);
+
+#    if ( EOS == APPROXIMATED_GENERAL )
+     real xsi=(R-u2/(lor+1.0)*D)/SQR(lor);
+     real rho=D/lor;
+     real P=((real)2.0*xsi*(xsi+(real)2.0*rho))/((real)5.0*(xsi+rho)+SQRT((real)9.0*SQR(xsi)+(real)18.0*rho*xsi+(real)25.0*SQR(rho)));
+
+     real dpdxsi=((real)2.0*xsi+(real)2.0*rho-(real)5.0*P)/((real)5.0*rho+(real)5.0*xsi-(real)8.0*P);
+     real dpdrho=((real)2.0*xsi-(real)5.0*P)/((real)5.0*rho+(real)5.0*xsi-(real)8.0*P);
+     real dv2dR=-(real)2.0*M*M/((R+D)*(R+D)*(R+D));
+
+     real dxsidR=(real)1.0/lor*lor-lor/(real)2.0*(D+(real)2.0*lor*xsi)*dv2dR;
+     real drhodR=D*lor/(real)2.0*dv2dR;
+
+     real dpdR=dpdxsi*dxsidR+dpdrho*drhodR;
+#    else
+     real dpdR=(Gamma-(real)1.0)/Gamma;
+     dpdR=dpdR*((real)1.0+M*M/((R+D)*(R+D))*((real)1.0-D*lor/(R+D)));
+#    endif
+
+  return (real)1.0-dpdR;
+}
+
+
+GPU_DEVICE static
+real f_Mignone(real R, real D, real M, real Eprim, real Gamma)
+{
+  real u2=M*M/((R+D)*(R+D)-M*M);
+  real lor=SQRT((real)1.0+u2);
+  real xsi=(R-u2/(lor+1)*D)/(lor*lor);
+
+# if ( EOS == APPROXIMATED_GENERAL )
+   real  rho=D/lor;
+   real  P=((real)2.0*xsi*(xsi+(real)2.0*rho))/((real)5.0*(xsi+rho)+SQRT((real)9.0*xsi*xsi+(real)18.0*rho*xsi+(real)25.0*rho*rho));
+# else
+   real  P=(Gamma-(real)1.0)/Gamma*xsi;
+# endif
+  return R-P-Eprim;
+}
+
+GPU_DEVICE static
+real Newton_Raphson_Mignone(real D, real M, real E, real Gamma)
+{
+//  !initial guess
+ real Delta = (real)16.0*E*E-(real)12.0*M*M;
+ real R = ((real)4.0*E+SQRT(Delta))/(real)6.0;
+//  !Switch to prime variables
+      R=R-D;
+ real Eprim=E-D;
+//  !NR loop
+ real epsilon=(real)1.0;
+
+  while (FABS(epsilon)>(real)1.0e-10)
+      {
+        epsilon=f_Mignone(R,D,M,Eprim,Gamma)/f_prim_Mignone(R,D,M,Eprim,Gamma)/R;
+        R=R*((real)1.0-epsilon);
+      }
+
+
+//! Go back to Q instead of Qprime
+return R+D;
+}
 
 //-------------------------------------------------------------------------------------------------------
 // Function    :  SRHydro_Con2Pri
@@ -205,79 +271,34 @@ real SRHydro_GetTemperature (const real Dens, const real MomX, const real MomY, 
 GPU_DEVICE
 real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real MinTemp)
 {
-  int iter;
-  real p, D_1, alpha, alpha2, lor2, lor, m, tol=1.e-14;
-  real tau, theta, h, dh_dp, dh_dtau, gmmr;
-  real yp, dyp, dp, scrh;
-  real D, E, m2;
+     real M = SQRT(SQR(In[1])+SQR(In[2])+SQR(In[3]));
 
-  D    = In[0];
-  m2 = SQR(In[1]) + SQR(In[2]) + SQR(In[3]);
-  E    = In[4];
+     real R = Newton_Raphson_Mignone(In[0], M, In[4], Gamma);
 
-# if EOS == CONSTANT_GAMMA
-   gmmr = Gamma/(Gamma - 1.0);
-# endif
-  m    = SQRT(m2);
-  p    = m - E;
-  p    = MAX(p, 1.e-18);
-  D_1  = (real)1.0/D;
-  for (iter = 0; iter < 10; iter++) {
+//     ! Compute the Lorentz factor
+     real u2  = M*M/(R*R-M*M);
+     real lor = SQRT((real)1.0+u2);
 
-    alpha  = E + p;
-    alpha2 = alpha*alpha;
-    lor2   = (real)1.0 - m2/alpha2;
+     real D = In[0];
+//     ! Compute the density
+     Out[0] = D/lor;
 
-    lor2 = MAX(lor2,1.e-9);
-    lor2 = (real)1.0/lor2;
-    lor  = SQRT(lor2);
+//     ! compute velocities
+     Out[1] = In[1]/R;
+     Out[2] = In[2]/R;
+     Out[3] = In[3]/R;
 
-    tau   = lor*D_1;
-    theta = p*tau;
+//     ! Compute pressure
+     real xsi=((R-D)-u2/(lor+1.0)*D)/(lor*lor);
+# if ( EOS == APPROXIMATED_GENERAL )
+     real rho=Out[0];
+     Out[4]=((real)2.0*xsi*(xsi+(real)2.0*rho))/((real)5.0*(xsi+rho)+SQRT((real)9.0*xsi*xsi+(real)18.0*rho*xsi+(real)25.0*rho*rho));
+#  else
+     Out[4]=(Gamma-(real)1.0)/Gamma*xsi;
+#  endif
 
-#    if EOS == CONSTANT_GAMMA
-     h       = (real)1.0 + gmmr*theta;
-     dh_dp   = gmmr*tau;
-     dh_dtau = gmmr*p;
-#    elif EOS == APPROXIMATED_GENERAL
-     h       = (real)2.5*theta + SQRT((real)2.25*theta*theta + (real)1.0);
-     scrh    = ((real)5.0*h - (real)8.0*theta)/((real)2.0*h - (real)5.0*theta);
-     dh_dp   = tau*scrh;
-     dh_dtau = p*scrh;
-#    endif
+        return lor;
 
-    yp  = D*h*lor - E - p;
-    dyp = D*lor*dh_dp - m2*lor2*lor/(alpha2*alpha)*(lor*dh_dtau + D*h) - 1.0;
-    dp  = yp/dyp;
-    p  -= dp;
-    if (fabs (dp) < tol*p) break;
-  }
-
-/* ----------------------------------------------------------
-            check if solution is consistent
-   ---------------------------------------------------------- */
-
-//  if (p != p) {
-//    WARNING(
-//      print("! EnergySolve: NaN found while recovering pressure, ");
-//    )
-//    return 1;
-//  } 
-//
-//  if (p < 0.0){
-//    WARNING(  
-//      print("! EnergySolve: negative pressure (%8.2e), ", p);
-//    )
-//    return 1;
-//  }
-
-  Out[0] = D/lor;
-  Out[4] = p;
-  real W = E + p;
-  Out[1] = In[1] / W;
-  Out[2] = In[2] / W;
-  Out[3] = In[3] / W;
-  return lor;
 }// FUNCTION : SRHydro_Con2Pri
 
 

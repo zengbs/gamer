@@ -15,7 +15,7 @@ main ()
   Con[1] = -5.2;
   Con[2] = 6.5;
   Con[3] = 0.59;
-  Con[4] = SQRT( SQR(Con[0]) + SQR(Con[1]) + SQR(Con[2]) + SQR(Con[3]) )*2.0;      
+  Con[4] = SQRT( SQR(Con[0]) + SQR(Con[1]) + SQR(Con[2]) + SQR(Con[3]) )*20.0;      
 
   double Pri[5] = { 0 };
 
