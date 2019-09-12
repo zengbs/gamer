@@ -62,7 +62,7 @@ void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3]
                    {
                       for (int v = 0 ; v < NCOMP_FLUID ;v++) Cons[v] = FData[FSize3D*v+i];
 
-                      if (SRHydro_CheckUnphysical(Cons, NULL, GAMMA, MIN_TEMP, __FUNCTION__, __LINE__, false))
+                      if (SRHydro_CheckUnphysical(Cons, NULL, GAMMA, MIN_TEMP, __FUNCTION__, __LINE__, true))
                        {
                           state = true;
                           break; 
@@ -75,7 +75,7 @@ void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3]
                   {
                      for (int v = 0 ; v < NCOMP_FLUID ;v++) Prim[v] = FData[FSize3D*v+i];
 
-                     if (SRHydro_CheckUnphysical(NULL, Prim, GAMMA, MIN_TEMP, __FUNCTION__, __LINE__, false))
+                     if (SRHydro_CheckUnphysical(NULL, Prim, GAMMA, MIN_TEMP, __FUNCTION__, __LINE__, true))
                       {
                          state = true;
                          break; 
