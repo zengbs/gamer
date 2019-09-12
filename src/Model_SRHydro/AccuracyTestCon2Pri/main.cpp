@@ -15,7 +15,7 @@ main ()
   Con[1] = -5.2;
   Con[2] = 6.5;
   Con[3] = 0.59;
-  Con[4] = SQRT( SQR(Con[0]) + SQR(Con[1]) + SQR(Con[2]) + SQR(Con[3]) )*(1.0+1e-10);      
+  Con[4] = SQRT( SQR(Con[0]) + SQR(Con[1]) + SQR(Con[2]) + SQR(Con[3]) )*2.0;      
 
   double Pri[5] = { 0 };
 
@@ -27,11 +27,9 @@ main ()
 
   double Vx, Vy, Vz;
 
-  real G = sqrt(1.0 + Pri[1]*Pri[1] + Pri[2]*Pri[2] + Pri[3]*Pri[3]);
-
-  Vx = Pri[1] / G;
-  Vy = Pri[2] / G;
-  Vz = Pri[3] / G;
+  Vx = Pri[1];
+  Vy = Pri[2];
+  Vz = Pri[3];
 
   printf ("Transform to prim:\n\n d=%e, Vx=%e, Vy=%e, Vz=%e, V=%e, P=%e\n\n", Pri[0], Vx, Vy, Vz, sqrt(Vx*Vx+Vy*Vy+Vz*Vz), Pri[4]);
 

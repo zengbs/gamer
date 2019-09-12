@@ -205,23 +205,22 @@ real SRHydro_GetTemperature (const real Dens, const real MomX, const real MomY, 
 GPU_DEVICE
 real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real MinTemp)
 {
-
   int iter;
   real p, D_1, alpha, alpha2, lor2, lor, m, tol=1.e-14;
   real tau, theta, h, dh_dp, dh_dtau, gmmr;
   real yp, dyp, dp, scrh;
   real D, E, m2;
 
-  D    = Con[0];
-  m2 = SQR(Con[1]) + SQR(Con[2]) + SQR(Con[3]);
-  E    = Con[4];
+  D    = In[0];
+  m2 = SQR(In[1]) + SQR(In[2]) + SQR(In[3]);
+  E    = In[4];
 
 # if EOS == CONSTANT_GAMMA
    gmmr = Gamma/(Gamma - 1.0);
 # endif
   m    = SQRT(m2);
   p    = m - E;
-//  p    = MAX(p, 1.e-18);
+  p    = MAX(p, 1.e-18);
   D_1  = (real)1.0/D;
   for (iter = 0; iter < 10; iter++) {
 
@@ -229,7 +228,7 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
     alpha2 = alpha*alpha;
     lor2   = (real)1.0 - m2/alpha2;
 
-//    lor2 = MAX(lor2,1.e-9);
+    lor2 = MAX(lor2,1.e-9);
     lor2 = (real)1.0/lor2;
     lor  = SQRT(lor2);
 
@@ -272,14 +271,13 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
 //    return 1;
 //  }
 
-  Pri[0] = D/lor;
-  Pri[4] = p;
+  Out[0] = D/lor;
+  Out[4] = p;
   real W = E + p;
-  Pri[1] = Con[1] / W;
-  Pri[2] = Con[2] / W;
-  Pri[3] = Con[3] / W;
-
-   return lor;
+  Out[1] = In[1] / W;
+  Out[2] = In[2] / W;
+  Out[3] = In[3] / W;
+  return lor;
 }// FUNCTION : SRHydro_Con2Pri
 
 

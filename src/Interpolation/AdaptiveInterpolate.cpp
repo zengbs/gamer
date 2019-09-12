@@ -35,6 +35,7 @@ void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3]
                    for (int v = 0 ; v < NCOMP_FLUID ;v++) Cons[v] = CData[CSize3D*v+i];
                                                                                                        
                    SRHydro_Con2Pri(Cons, Prim, GAMMA, MIN_TEMP);                                       
+				   SRHydro_3Velto4Vel( Prim, Prim);
                                                                                                        
                    for (int v = 0 ; v < NCOMP_FLUID ;v++) CData[CSize3D*v+i] = Prim[v];      
                  }
@@ -100,6 +101,7 @@ void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3]
          for (int i=0; i<FSize3D; i++)
          {
             for (int v = 0 ; v < NCOMP_FLUID ;v++) Prim[v] = FData[FSize3D*v+i];
+			SRHydro_4Velto3Vel( Prim, Prim );
             SRHydro_Pri2Con(Prim, Cons, GAMMA);
             for (int v = 0 ; v < NCOMP_FLUID ;v++) FData[FSize3D*v+i] = Cons[v];
          }

@@ -105,6 +105,7 @@ void SRHydro_DataReconstruction( const real g_ConVar   [][ CUBE(FLU_NXT) ],
 #        endif
 
          SRHydro_Con2Pri( ConVar_1Cell, PriVar_1Cell, Gamma, MinTemp );
+		 SRHydro_3Velto4Vel( PriVar_1Cell, PriVar_1Cell );
 
          for (int v=0; v<NCOMP_TOTAL; v++)   g_PriVar[v][idx] = PriVar_1Cell[v];
       }
@@ -177,9 +178,11 @@ void SRHydro_DataReconstruction( const real g_ConVar   [][ CUBE(FLU_NXT) ],
          real tmp[NCOMP_TOTAL];  // input and output arrays must not overlap for Pri2Con()
 
          for (int v=0; v<NCOMP_TOTAL; v++)   tmp[v] = fc[faceL][v];
+		 SRHydro_4Velto3Vel(tmp, tmp);
          SRHydro_Pri2Con( tmp, fc[faceL], Gamma );
 
          for (int v=0; v<NCOMP_TOTAL; v++)   tmp[v] = fc[faceR][v];
+		 SRHydro_4Velto3Vel(tmp, tmp);
          SRHydro_Pri2Con( tmp, fc[faceR], Gamma );
 
       } // for (int d=0; d<3; d++)
@@ -262,6 +265,7 @@ real B = (real)0.25;
 #        endif
 
          SRHydro_Con2Pri( ConVar_1Cell, PriVar_1Cell, Gamma, MinTemp );
+		 SRHydro_3Velto4Vel( PriVar_1Cell, PriVar_1Cell );
 
          for (int v=0; v<NCOMP_TOTAL; v++)   g_PriVar[v][idx] = PriVar_1Cell[v];
       }
@@ -352,9 +356,11 @@ real B = (real)0.25;
          real tmp[NCOMP_TOTAL];  // input and output arrays must not overlap for Pri2Con()
 
          for (int v=0; v<NCOMP_TOTAL; v++)   tmp[v] = fc[faceL][v];
+		 SRHydro_4Velto3Vel(tmp, tmp);
          SRHydro_Pri2Con( tmp, fc[faceL], Gamma );
 
          for (int v=0; v<NCOMP_TOTAL; v++)   tmp[v] = fc[faceR][v];
+		 SRHydro_4Velto3Vel(tmp, tmp);
          SRHydro_Pri2Con( tmp, fc[faceR], Gamma );
 
       } // for (int d=0; d<3; d++)
@@ -422,6 +428,7 @@ void SRHydro_DataReconstruction( const real g_ConVar   [][ CUBE(FLU_NXT) ],
 #        endif
 
          SRHydro_Con2Pri( ConVar_1Cell, PriVar_1Cell, Gamma, MinTemp );
+		 SRHydro_3Velto4Vel( PriVar_1Cell, PriVar_1Cell );
 
          for (int v=0; v<NCOMP_TOTAL; v++)   g_PriVar[v][idx] = PriVar_1Cell[v];
       }
@@ -560,9 +567,11 @@ void SRHydro_DataReconstruction( const real g_ConVar   [][ CUBE(FLU_NXT) ],
          real tmp[NCOMP_TOTAL];  // input and output arrays must not overlap for Pri2Con()
 
          for (int v=0; v<NCOMP_TOTAL; v++)   tmp[v] = fc[faceL][v];
+		 SRHydro_4Velto3Vel(tmp, tmp);
          SRHydro_Pri2Con( tmp, fc[faceL], Gamma );
 
          for (int v=0; v<NCOMP_TOTAL; v++)   tmp[v] = fc[faceR][v];
+		 SRHydro_4Velto3Vel(tmp, tmp);
          SRHydro_Pri2Con( tmp, fc[faceR], Gamma );
 
       } // for (int d=0; d<3; d++)

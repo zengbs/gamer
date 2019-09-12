@@ -1,6 +1,6 @@
 #!/bin/bash
 gcc main.cpp  CPU_Shared_FluUtility.cpp \
--DCONSERVED_ENERGY=2 \
+-DCONSERVED_ENERGY=1 \
 -DSERIAL \
 -DFLOAT8 \
 -DLR_SCHEME=PLM \
