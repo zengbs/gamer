@@ -373,9 +373,9 @@ void SRHydro_RiemannPredict( const real g_ConVar_In[][ CUBE(FLU_NXT) ],
       for (int v=0; v<NCOMP_TOTAL; v++)
          out_con[v] = g_ConVar_In[v][idx_in] - dt_dh2*( dflux[0][v] + dflux[1][v] + dflux[2][v] );
 
-//#     ifdef CHECK_NEGATIVE_IN_FLUID
+#     ifdef CHECK_NEGATIVE_IN_FLUID
       SRHydro_CheckUnphysical(out_con, NULL, Gamma, MinTemp, __FUNCTION__, __LINE__, true);
-//#     endif
+#     endif
 
 #     ifdef CHECK_MIN_TEMP
       out_con[ENGY] = SRHydro_CheckMinTempInEngy( out_con, MinTemp, Gamma);
