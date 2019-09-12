@@ -459,6 +459,7 @@ void InterpolateGhostZone( const int lv, const int PID, real IntData[], const in
 	  for(int q =0;q<NCOMP_FLUID;q++)  Cons[q]=amr->patch[FluSg][lv][PID]->fluid[q][k1][j1][i1];
 
 	  SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+      SRHydro_3Velto4Vel( Prim, Prim );
 
 	  CData_Ptr[Idx] = Prim[1];
 
@@ -468,6 +469,7 @@ void InterpolateGhostZone( const int lv, const int PID, real IntData[], const in
 	      Cons[q]=amr->patch[FluSg_IntT][lv][PID]->fluid[q][k1][j1][i1];}
 
 	      SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+          SRHydro_3Velto4Vel( Prim, Prim );
 
 	      CData_Ptr[Idx] =   FluWeighting     *CData_Ptr[Idx]
 			       + FluWeighting_IntT*Prim[1];
@@ -488,6 +490,7 @@ void InterpolateGhostZone( const int lv, const int PID, real IntData[], const in
 	  for(int q =0;q<NCOMP_FLUID;q++)  Cons[q]=amr->patch[FluSg][lv][PID]->fluid[q][k1][j1][i1];
 
 	  SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+      SRHydro_3Velto4Vel( Prim, Prim );
 
       CData_Ptr[Idx] = Prim[2];
 
@@ -496,6 +499,7 @@ void InterpolateGhostZone( const int lv, const int PID, real IntData[], const in
          for(int q =0;q<NCOMP_FLUID;q++)  Cons[q]=amr->patch[FluSg_IntT][lv][PID]->fluid[q][k1][j1][i1];
 
 	     SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+         SRHydro_3Velto4Vel( Prim, Prim );
 
 	     CData_Ptr[Idx] =   FluWeighting     *CData_Ptr[Idx]
 			       + FluWeighting_IntT*Prim[2];
@@ -516,6 +520,7 @@ void InterpolateGhostZone( const int lv, const int PID, real IntData[], const in
       for(int q =0;q<NCOMP_FLUID;q++) Cons[q]=amr->patch[FluSg][lv][PID]->fluid[q][k1][j1][i1];
 
 	  SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+      SRHydro_3Velto4Vel( Prim, Prim );
 
       CData_Ptr[Idx] = Prim[3];
 
@@ -524,6 +529,7 @@ void InterpolateGhostZone( const int lv, const int PID, real IntData[], const in
          for(int q =0;q<NCOMP_FLUID;q++) Cons[q]=amr->patch[FluSg_IntT][lv][PID]->fluid[q][k1][j1][i1];
 
 	     SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+         SRHydro_3Velto4Vel( Prim, Prim );
 
 	     CData_Ptr[Idx] =   FluWeighting     *CData_Ptr[Idx]
 	   	       + FluWeighting_IntT*Prim[3];
@@ -822,6 +828,7 @@ void InterpolateGhostZone( const int lv, const int PID, real IntData[], const in
 	        for(int q =0;q<NCOMP_FLUID;q++) Cons[q]=amr->patch[FluSg][lv][SibPID]->fluid[q][k2][j2][i2];
 
 		    SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+            SRHydro_3Velto4Vel( Prim, Prim );
 
 		    CData_Ptr[Idx] = Prim[1];
 
@@ -830,6 +837,7 @@ void InterpolateGhostZone( const int lv, const int PID, real IntData[], const in
                for(int q =0;q<NCOMP_FLUID;q++) Cons[q]=amr->patch[FluSg_IntT][lv][SibPID]->fluid[q][k2][j2][i2];
 
 		       SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+               SRHydro_3Velto4Vel( Prim, Prim );
 
 		       CData_Ptr[Idx] =   FluWeighting     *CData_Ptr[Idx]
 		     	       + FluWeighting_IntT*Prim[1];
@@ -850,6 +858,7 @@ void InterpolateGhostZone( const int lv, const int PID, real IntData[], const in
 	        for(int q =0;q<NCOMP_FLUID;q++) Cons[q]=amr->patch[FluSg][lv][SibPID]->fluid[q][k2][j2][i2];
 
 		    SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+            SRHydro_3Velto4Vel( Prim, Prim );
 
 		    CData_Ptr[Idx] = Prim[2];
 
@@ -859,6 +868,7 @@ void InterpolateGhostZone( const int lv, const int PID, real IntData[], const in
 		      Cons[q]=amr->patch[FluSg_IntT][lv][SibPID]->fluid[q][k2][j2][i2];}
 
 		      SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+              SRHydro_3Velto4Vel( Prim, Prim );
 
 		      CData_Ptr[Idx] =   FluWeighting     *CData_Ptr[Idx]
 				       + FluWeighting_IntT*Prim[2];
@@ -879,6 +889,7 @@ void InterpolateGhostZone( const int lv, const int PID, real IntData[], const in
 	        for(int q =0;q<NCOMP_FLUID;q++)	Cons[q]=amr->patch[FluSg][lv][SibPID]->fluid[q][k2][j2][i2];
 
             SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+            SRHydro_3Velto4Vel( Prim, Prim );
 
             CData_Ptr[Idx] = Prim[3];
 
@@ -888,6 +899,7 @@ void InterpolateGhostZone( const int lv, const int PID, real IntData[], const in
 		      Cons[q]=amr->patch[FluSg_IntT][lv][SibPID]->fluid[q][k2][j2][i2];}
 
 		      SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+              SRHydro_3Velto4Vel( Prim, Prim );
 
 		      CData_Ptr[Idx] =   FluWeighting     *CData_Ptr[Idx]
 				       + FluWeighting_IntT*Prim[3];

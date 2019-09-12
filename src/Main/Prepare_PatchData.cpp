@@ -922,6 +922,7 @@ void Prepare_PatchData( const int lv, const double PrepTime, real *h_Input_Array
                   Cons[4]=amr->patch[FluSg][lv][PID]->fluid[ENGY][k][j][i];
 
                   SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+                  SRHydro_3Velto4Vel( Prim, Prim );
 
                   Array_Ptr[Idx1] = Prim[1];
 
@@ -934,6 +935,7 @@ void Prepare_PatchData( const int lv, const double PrepTime, real *h_Input_Array
         		    Cons[4]=amr->patch[FluSg_IntT][lv][PID]->fluid[ENGY][k][j][i];
         
                     SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+                    SRHydro_3Velto4Vel( Prim, Prim );
         
         		    Array_Ptr[Idx1] =   FluWeighting *Array_Ptr[Idx1] + FluWeighting_IntT*Prim[1];
         		  }
@@ -958,6 +960,7 @@ void Prepare_PatchData( const int lv, const double PrepTime, real *h_Input_Array
                   Cons[4]=amr->patch[FluSg][lv][PID]->fluid[ENGY][k][j][i];
 
                   SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+                  SRHydro_3Velto4Vel( Prim, Prim );
 
                   Array_Ptr[Idx1] = Prim[2];
 
@@ -970,6 +973,7 @@ void Prepare_PatchData( const int lv, const double PrepTime, real *h_Input_Array
 			        Cons[4]=amr->patch[FluSg_IntT][lv][PID]->fluid[ENGY][k][j][i];
 
 			        SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+                    SRHydro_3Velto4Vel( Prim, Prim );
 
 			        Array_Ptr[Idx1] =   FluWeighting *Array_Ptr[Idx1] + FluWeighting_IntT*Prim[2];
                   }
@@ -993,6 +997,7 @@ void Prepare_PatchData( const int lv, const double PrepTime, real *h_Input_Array
                   Cons[4]=amr->patch[FluSg][lv][PID]->fluid[ENGY][k][j][i];
 
                   SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+                  SRHydro_3Velto4Vel( Prim, Prim );
 
                   Array_Ptr[Idx1] = Prim[3];
 
@@ -1005,6 +1010,7 @@ void Prepare_PatchData( const int lv, const double PrepTime, real *h_Input_Array
         			  Cons[4]=amr->patch[FluSg_IntT][lv][PID]->fluid[ENGY][k][j][i];
         
         			  SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+                      SRHydro_3Velto4Vel( Prim, Prim );
         
         			  Array_Ptr[Idx1] =   FluWeighting *Array_Ptr[Idx1] + FluWeighting_IntT*Prim[3];
                   }
@@ -1324,6 +1330,7 @@ void Prepare_PatchData( const int lv, const double PrepTime, real *h_Input_Array
                         Cons[4]=amr->patch[FluSg][lv][SibPID]->fluid[ENGY][K2][J2][I2];
 
              			SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+                        SRHydro_3Velto4Vel( Prim, Prim );
 
                         Array_Ptr[Idx1] = Prim[1];
 
@@ -1336,6 +1343,7 @@ void Prepare_PatchData( const int lv, const double PrepTime, real *h_Input_Array
            			      Cons[4]=amr->patch[FluSg_IntT][lv][SibPID]->fluid[ENGY][K2][J2][I2];
            
            			      SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+                          SRHydro_3Velto4Vel( Prim, Prim );
            			      Array_Ptr[Idx1] =   FluWeighting     *Array_Ptr[Idx1]
            						+ FluWeighting_IntT*Prim[1];
            			    }
@@ -1359,6 +1367,7 @@ void Prepare_PatchData( const int lv, const double PrepTime, real *h_Input_Array
                         Cons[4]=amr->patch[FluSg][lv][SibPID]->fluid[ENGY][K2][J2][I2];
 
                         SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+                        SRHydro_3Velto4Vel( Prim, Prim );
 
                         Array_Ptr[Idx1] = Prim[2];
 
@@ -1371,6 +1380,7 @@ void Prepare_PatchData( const int lv, const double PrepTime, real *h_Input_Array
                            Cons[4]=amr->patch[FluSg_IntT][lv][SibPID]->fluid[ENGY][K2][J2][I2];
                         
                            SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+                           SRHydro_3Velto4Vel( Prim, Prim );
                            Array_Ptr[Idx1] =   FluWeighting     *Array_Ptr[Idx1]
                          		+ FluWeighting_IntT*Prim[2];
                         }
@@ -1394,6 +1404,7 @@ void Prepare_PatchData( const int lv, const double PrepTime, real *h_Input_Array
                         Cons[4]=amr->patch[FluSg][lv][SibPID]->fluid[ENGY][K2][J2][I2];
 
                        SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+                       SRHydro_3Velto4Vel( Prim, Prim );
 
                         Array_Ptr[Idx1] = Prim[3];
 
@@ -1406,6 +1417,7 @@ void Prepare_PatchData( const int lv, const double PrepTime, real *h_Input_Array
              			  Cons[4]=amr->patch[FluSg_IntT][lv][SibPID]->fluid[ENGY][K2][J2][I2];
              
              			  SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
+                          SRHydro_3Velto4Vel( Prim, Prim );
              			  Array_Ptr[Idx1] =   FluWeighting     *Array_Ptr[Idx1]
              					+ FluWeighting_IntT*Prim[3];
                   		}
