@@ -66,13 +66,13 @@ void SRHydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In
    rFactor = SRHydro_Con2Pri (CR, PR, Gamma, MinTemp);
 
 /* 2. Transform 4-velocity to 3-velocity */
-   lV1=PL[1]/lFactor;
-   lV2=PL[2]/lFactor;
-   lV3=PL[3]/lFactor;
+   lV1=PL[1];
+   lV2=PL[2];
+   lV3=PL[3];
 
-   rV1=PR[1]/rFactor;
-   rV2=PR[2]/rFactor;
-   rV3=PR[3]/rFactor;
+   rV1=PR[1];
+   rV2=PR[2];
+   rV3=PR[3];
 
 /* 3. Compute the max and min wave speeds used in Mignone */
 #  if ( EOS == APPROXIMATED_GENERAL )
