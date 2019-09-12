@@ -151,7 +151,6 @@ bool Flag_Check( const int lv, const int PID, const int i, const int j, const in
       Cons[ENGY]=Fluid[ENGY][k][j][i];
 
       SRHydro_Con2Pri(Cons, Prim, (real)GAMMA, (real) MIN_TEMP );
-      SRHydro_4Velto3Vel( Prim, Prim );
       Mag_3Velocity = SQRT( SQR(Prim[1]) + SQR(Prim[2]) + SQR(Prim[3]) );
 
       Flag |= ( Mag_3Velocity > FlagTable_3Velocity[lv] );
