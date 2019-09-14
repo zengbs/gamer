@@ -297,6 +297,14 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
      Out[4]=(Gamma-(real)1.0)/Gamma*xsi;
 #    endif
 
+  if ( Out[4] != Out[4] ) printf("! EnergySolve: NaN found while recovering pressure\n");
+  if ( Out[4] < 0.0 )     printf("! EnergySolve: negative pressure (%10.7e)\n", p); 
+	                                                                                                                            
+  real v2 = SQR(Out[1]) + SQR(Out[2]) + SQR(Out[3]);
+				   
+  if ( v2 >= (real)1.0 ) printf("! EnergySolve: superluminal motion is found! (%10.7e)\n", v2);
+
+
      return lor;
 
 }// FUNCTION : SRHydro_Con2Pri
