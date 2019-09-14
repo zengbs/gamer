@@ -246,11 +246,11 @@ real Newton_Raphson_Mignone(real D, real M, real E, real Gamma)
 //  !NR loop
  real epsilon=(real)1.0;
 
-  while (FABS(epsilon)>(real)1.0e-10)
-      {
-        epsilon=f_Mignone(R,D,M,Eprim,Gamma)/f_prim_Mignone(R,D,M,Eprim,Gamma)/R;
-        R=R*((real)1.0-epsilon);
-      }
+ while (FABS(epsilon)>(real)1.0e-10)
+ {
+   epsilon=f_Mignone(R,D,M,Eprim,Gamma)/f_prim_Mignone(R,D,M,Eprim,Gamma)/R;
+   R=R*((real)1.0-epsilon);
+ }
 
 
 //! Go back to Q instead of Qprime
@@ -290,14 +290,14 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
 
 //     ! Compute pressure
      real xsi=((R-D)-u2/(lor+1.0)*D)/(lor*lor);
-# if ( EOS == APPROXIMATED_GENERAL )
+#    if ( EOS == APPROXIMATED_GENERAL )
      real rho=Out[0];
      Out[4]=((real)2.0*xsi*(xsi+(real)2.0*rho))/((real)5.0*(xsi+rho)+SQRT((real)9.0*xsi*xsi+(real)18.0*rho*xsi+(real)25.0*rho*rho));
-#  else
+#    else
      Out[4]=(Gamma-(real)1.0)/Gamma*xsi;
-#  endif
+#    endif
 
-        return lor;
+     return lor;
 
 }// FUNCTION : SRHydro_Con2Pri
 
