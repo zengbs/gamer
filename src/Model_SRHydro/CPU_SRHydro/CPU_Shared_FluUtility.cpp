@@ -220,7 +220,7 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
 # endif
   m    = SQRT(m2);
   p    = m - E;
-  p    = MAX(p, 1.e-18);
+//  p    = MAX(p, 1.e-18);
   D_1  = (real)1.0/D;
   for (iter = 0; iter < 10; iter++) {
 
@@ -228,7 +228,7 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
     alpha2 = alpha*alpha;
     lor2   = (real)1.0 - m2/alpha2;
 
-    lor2 = MAX(lor2,1.e-9);
+//    lor2 = MAX(lor2,1.e-9);
     lor2 = (real)1.0/lor2;
     lor  = SQRT(lor2);
 
@@ -257,19 +257,8 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
             check if solution is consistent
    ---------------------------------------------------------- */
 
-//  if (p != p) {
-//    WARNING(
-//      print("! EnergySolve: NaN found while recovering pressure, ");
-//    )
-//    return 1;
-//  } 
-//
-//  if (p < 0.0){
-//    WARNING(  
-//      print("! EnergySolve: negative pressure (%8.2e), ", p);
-//    )
-//    return 1;
-//  }
+  if (p != p)    printf("! EnergySolve: NaN found while recovering pressure\n");
+  if (p < 0.0)   printf("! EnergySolve: negative pressure (%10.7e)\n", p);
 
   Out[0] = D/lor;
   Out[4] = p;
@@ -277,6 +266,11 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
   Out[1] = In[1] / W;
   Out[2] = In[2] / W;
   Out[3] = In[3] / W;
+
+  real v2 = SQR(Out[1]) + SQR(Out[2]) + SQR(Out[3]);
+
+  if ( v2 >= (real)1.0 ) printf("! EnergySolve: superluminal motion is found! (%10.7e)\n", v2);
+
   return lor;
 }// FUNCTION : SRHydro_Con2Pri
 
