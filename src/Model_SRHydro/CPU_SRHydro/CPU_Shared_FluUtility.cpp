@@ -206,7 +206,13 @@ GPU_DEVICE
 real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real MinTemp)
 {
   int iter;
-  real p, D_1, alpha, alpha2, lor2, lor, m, tol=1.e-14;
+# ifdef FLOAT8
+  real tol=1.e-17
+# else
+  real tol=1.e-8
+#endif
+
+  real p, D_1, alpha, alpha2, lor2, lor, m;
   real tau, theta, h, dh_dp, dh_dtau, gmmr;
   real yp, dyp, dp, scrh;
   real D, E, m2;
@@ -222,7 +228,9 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
   p    = m - E;
 //  p    = MAX(p, 1.e-18);
   D_1  = (real)1.0/D;
-  for (iter = 0; iter < 10; iter++) {
+
+  for (iter = 0; iter < 10; iter++) 
+  {
 
     alpha  = E + p;
     alpha2 = alpha*alpha;
