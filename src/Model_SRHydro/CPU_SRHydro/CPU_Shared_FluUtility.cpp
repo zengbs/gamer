@@ -246,7 +246,11 @@ real Newton_Raphson_Mignone(real D, real M, real E, real Gamma)
 //  !NR loop
  real epsilon=(real)1.0;
 
- while (FABS(epsilon)>(real)1.0e-10)
+#ifdef FLOAT8
+ while (FABS(epsilon)>(real)1.0e-16)
+#else
+ while (FABS(epsilon)>(real)1.0e-7)
+#endif
  {
    epsilon=f_Mignone(R,D,M,Eprim,Gamma)/f_prim_Mignone(R,D,M,Eprim,Gamma)/R;
    R=R*((real)1.0-epsilon);
