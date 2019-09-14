@@ -207,9 +207,9 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
 {
   int iter;
 # ifdef FLOAT8
-  real tol=1.e-17
+  real tol=1.e-16
 # else
-  real tol=1.e-8
+  real tol=1.e-7
 #endif
 
   real p, D_1, alpha, alpha2, lor2, lor, m;
