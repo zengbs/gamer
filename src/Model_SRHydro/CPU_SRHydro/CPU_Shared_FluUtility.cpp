@@ -222,11 +222,11 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
   E    = In[4];
 
 # if EOS == CONSTANT_GAMMA
-   gmmr = Gamma/(Gamma - 1.0);
+   gmmr = Gamma/(Gamma - (real)1.0);
 # endif
   m    = SQRT(m2);
-  p    = m - E;
-//  p    = MAX(p, 1.e-18);
+  p    = m - E;   // initial guess
+  p    = MAX(p, (real)1.e-18); 
   D_1  = (real)1.0/D;
 
   for (iter = 0; iter < 10; iter++) 
@@ -255,7 +255,7 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
 #    endif
 
     yp  = D*h*lor - E - p;
-    dyp = D*lor*dh_dp - m2*lor2*lor/(alpha2*alpha)*(lor*dh_dtau + D*h) - 1.0;
+    dyp = D*lor*dh_dp - m2*lor2*lor/(alpha2*alpha)*(lor*dh_dtau + D*h) - (real)1.0;
     dp  = yp/dyp;
     p  -= dp;
     if (fabs (dp) < tol*p) break;
@@ -266,7 +266,7 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
    ---------------------------------------------------------- */
 
   if (p != p)    printf("! EnergySolve: NaN found while recovering pressure\n");
-  if (p < 0.0)   printf("! EnergySolve: negative pressure (%10.7e)\n", p);
+  if (p < (real)0.0)   printf("! EnergySolve: negative pressure (%10.7e)\n", p);
 
   Out[0] = D/lor;
   Out[4] = p;
