@@ -36,11 +36,10 @@ __constant__ double c_ExtAcc_AuxArray[EXT_ACC_NAUX_MAX];
 // Return      :  0/-1 : successful/failed
 //---------------------------------------------------------------------------------------------------
 __host__
-int CUPOT_SetConstMem_dtSolver_HydroGravity( double h_ExtAcc_AuxArray[] )
+int CUPOT_SetConstMem_dtSolver_HydroGravity( double h_Ptr[] )
 {
 
-   if (  cudaSuccess != cudaMemcpyToSymbol( c_ExtAcc_AuxArray, h_ExtAcc_AuxArray, EXT_ACC_NAUX_MAX*sizeof(double),
-                                            0, cudaMemcpyHostToDevice)  )
+   if (  cudaSuccess != cudaMemcpyToSymbol( c_ExtAcc_AuxArray, h_Ptr, EXT_ACC_NAUX_MAX*sizeof(double), 0, cudaMemcpyHostToDevice)  )
       return -1;
 
    else

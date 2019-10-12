@@ -21,7 +21,15 @@
 
 // variables reside in constant memory
 //__constant__ double c_ExtAcc_AuxArray[EXT_ACC_NAUX_MAX];
-
+__constant__ struct c_ExtAcc_AuxStruct_t
+{
+  real *ExtAcc_Table_R;
+  real *ExtAcc_Table_Acc;
+  real  Center[3];
+  int   ExtAcc_NBin;
+  real  GM;
+  real  Eps;
+}; c_ExtAcc_AuxStruct
 
 //-------------------------------------------------------------------------------------------------------
 // Function    :  CUPOT_SetConstMem_HydroGravitySolver
@@ -38,10 +46,8 @@ __host__
 int CUPOT_SetConstMem_HydroGravitySolver( double h_Ptr[] )
 {
 
-   if (  cudaSuccess != cudaMemcpyToSymbol( c_ExtAcc_AuxArray, h_Ptr, EXT_ACC_NAUX_MAX*sizeof(double),
-                                            0, cudaMemcpyHostToDevice)  )
+   if (  cudaSuccess != cudaMemcpyToSymbol( c_ExtAcc_AuxArray, h_Ptr, EXT_ACC_NAUX_MAX*sizeof(double), 0, cudaMemcpyHostToDevice)  )
       return -1;
-
    else
       return 0;
 
