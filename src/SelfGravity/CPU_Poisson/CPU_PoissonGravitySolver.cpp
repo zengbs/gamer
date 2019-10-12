@@ -7,7 +7,7 @@
 #include "CUPOT.h"
 extern double ExtPot_AuxArray[EXT_POT_NAUX_MAX];
 extern double ExtAcc_AuxArray[EXT_ACC_NAUX_MAX];
-
+extern ExtAcc_AuxStruct_t ExtAcc_AuxStruct;
 
 // Poisson solver prototypes
 #if   ( POT_SCHEME == SOR )
@@ -38,7 +38,7 @@ void CPU_HydroGravitySolver(
          char   g_DE_Array     [][ CUBE(PS1) ],
    const int NPatchGroup,
    const real dt, const real dh, const bool P5_Gradient,
-   const OptGravityType_t GravityType, const double c_ExtAcc_AuxArray[],
+   const OptGravityType_t GravityType, ExtAcc_AuxStruct_t ExtAcc_AuxStruct,
    const double TimeNew, const double TimeOld, const real MinEint );
 
 #elif ( MODEL == MHD )
@@ -179,7 +179,7 @@ void CPU_PoissonGravitySolver( const real h_Rho_Array    [][RHO_NXT][RHO_NXT][RH
                               (real(*)[GRA_NIN-1][ CUBE(PS1) ]) h_Flu_Array_USG,
                               (char(*)[ CUBE(PS1) ])            h_DE_Array,
                               NPatchGroup, dt, dh, P5_Gradient, GravityType,
-                              ExtAcc_AuxArray, TimeNew, TimeOld, MinEint );
+                              ExtAcc_AuxStruct, TimeNew, TimeOld, MinEint );
 
 #     elif ( MODEL == MHD )
 #     error : WAIT MHD !!!

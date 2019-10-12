@@ -4,7 +4,7 @@
 
 
 #include "CUPOT.h"
-double ExtAcc_AuxArray[EXT_ACC_NAUX_MAX];
+ExtAcc_AuxStruct_t ExtAcc_AuxStruct;
 
 // declare as static so that other functions cannot invoke it directly and must use the function pointer
 static void Init_ExternalAcc();

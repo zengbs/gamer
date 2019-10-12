@@ -36,6 +36,9 @@ static int     Jet_HSE_BgTable_NBin;               // for Jet_HSE: number of bin
 
 void SRHydro_Pri2Con_Double (const double In[], double Out[], const double Gamma);
 
+#ifdef GRAVITY
+extern ExtAcc_AuxStruct_t ExtAcc_AuxStruct;
+#endif
 
 //-------------------------------------------------------------------------------------------------------
 // Function    :  Validate
@@ -337,6 +340,8 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
 {
 
 // variables for Jet_HSE
+   const int  NCol         = 3;           // total number of columns to load
+   const int  Col[NCol]    = {1, 2, 3};   // target columns: (radius, density, temperature)
    const double *Table_R=NULL, *Table_n=NULL, *Table_T=NULL;
    double dx, dy, dz, dr;
 
@@ -657,8 +662,9 @@ bool Flag_User( const int i, const int j, const int k, const int lv, const int P
 //-------------------------------------------------------------------------------------------------------
 void Init_ExternalAcc()
 {
-
-// ExtAcc_AuxArray has the size of EXT_ACC_NAUX_MAX defined in CUPOT.h (default = 10)
+// 1. set up ExtAcc_AuxArray[]
+//---------------------------------------------------------------------
+// ExtAcc_AuxArray, which is defined in Init_ExternalAcc.cpp, has the size of EXT_ACC_NAUX_MAX defined in CUPOT.h (default = 10)
 // --> by default we set
 //     ExtAcc_AuxArray[0] = x coordinate of the external acceleration center
 //     ExtAcc_AuxArray[1] = y ...
@@ -671,11 +677,40 @@ void Init_ExternalAcc()
    const double GM  = NEWTON_G*M;
    const double Eps = 0.0;
 
-   ExtAcc_AuxArray[0] = 0.5*amr->BoxSize[0] - Jet_HSE_Dx;
-   ExtAcc_AuxArray[1] = 0.5*amr->BoxSize[1] - Jet_HSE_Dy;
-   ExtAcc_AuxArray[2] = 0.5*amr->BoxSize[2] - Jet_HSE_Dz;
-   ExtAcc_AuxArray[3] = GM;
-   ExtAcc_AuxArray[4] = Eps;
+   ExtAcc_AuxStruct.GM  = GM;
+   ExtAcc_AuxStruct.Eps = Eps;
+
+// 2. set up ExtAcc_NBin, ExtAcc_Table_R and ExtAcc_Table_Acc
+//---------------------------------------------------------------------
+
+   double *Jet_HSE_BgTable_Data = NULL;      // for Jet_HSE: background gas table [radius/density/temperature]
+   const bool RowMajor_No       = false;     // load data into the column-major order
+   const bool AllocMem_Yes      = true;      // allocate memory for Merger_Prof1/2
+   const int  NCol              = 2;         // total number of columns to load
+   const int  Col[NCol]         = {1, 4};    // target columns: (radius, acceleration)
+
+// ExtAcc_NBin, ExtAcc_Table_R and ExtAcc_Table_Acc are defined in SelfGravity/Init_ExternalAcc.cpp
+// load the hydrostatic equilibrium table
+   ExtAcc_AuxStruct.ExtAcc_NBin = Aux_LoadTable( Jet_HSE_BgTable_Data, Jet_HSE_BgTable_File, NCol, Col, RowMajor_No, AllocMem_Yes );
+
+   if ( Jet_HSE_BgTable_Data == NULL ) Aux_Error( ERROR_INFO, "Jet_HSE_BgTable_Data == NULL!!\n" );
+
+// allocate memory for ExtAcc_Table_R and ExtAcc_Table_Acc
+   ExtAcc_AuxStruct.ExtAcc_Table_R   = new double [ExtAcc_AuxStruct.ExtAcc_NBin];
+   ExtAcc_AuxStruct.ExtAcc_Table_Acc = new double [ExtAcc_AuxStruct.ExtAcc_NBin];
+
+// store table
+   ExtAcc_AuxStruct.ExtAcc_Table_R   = Jet_HSE_BgTable_Data + (Col[0]-1)*ExtAcc_AuxStruct.ExtAcc_NBin;
+   ExtAcc_AuxStruct.ExtAcc_Table_Acc = Jet_HSE_BgTable_Data + (Col[1]-1)*ExtAcc_AuxStruct.ExtAcc_NBin;
+
+// cneter of acceleration field
+   ExtAcc_AuxStruct.Center[0] = 0.5*amr->BoxSize[0] - Jet_HSE_Dx;
+   ExtAcc_AuxStruct.Center[1] = 0.5*amr->BoxSize[1] - Jet_HSE_Dx;
+   ExtAcc_AuxStruct.Center[2] = 0.5*amr->BoxSize[2] - Jet_HSE_Dx;
+
+//   Acc[0] = Mis_InterpolateFromTable( ExtAcc_NBin, Table_R, Table_Acc, r ) * dx / r;
+//   Acc[1] = Mis_InterpolateFromTable( ExtAcc_NBin, Table_R, Table_Acc, r ) * dy / r;
+//   Acc[2] = Mis_InterpolateFromTable( ExtAcc_NBin, Table_R, Table_Acc, r ) * dz / r;
 
 } // FUNCTION : Init_ExternalAcc
 #endif

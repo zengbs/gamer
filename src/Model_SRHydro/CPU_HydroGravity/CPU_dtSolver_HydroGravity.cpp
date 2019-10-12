@@ -94,7 +94,7 @@ void CUPOT_dtSolver_HydroGravity( real g_dt_Array[], const real g_Pot_Array[][ C
 void CPU_dtSolver_HydroGravity  ( real g_dt_Array[], const real g_Pot_Array[][ CUBE(GRA_NXT) ],
                                   const double g_Corner_Array[][3], const int NPatchGroup,
                                   const real dh, const real Safety, const bool P5_Gradient,
-                                  const OptGravityType_t GravityType, const double c_ExtAcc_AuxArray[],
+                                  const OptGravityType_t GravityType, ExtAcc_AuxStruct_t ExtAcc_AuxStruct,
                                   const double ExtAcc_Time )
 #endif
 {
@@ -169,7 +169,7 @@ void CPU_dtSolver_HydroGravity  ( real g_dt_Array[], const real g_Pot_Array[][ C
             y = g_Corner_Array[P][1] + double(j_ext*dh);
             z = g_Corner_Array[P][2] + double(k_ext*dh);
             // ExternalAcc() is defined in src/SelfGravity/CPU_Gravity/CPU_ExternalAcc.cpp
-            ExternalAcc( Acc, x, y, z, ExtAcc_Time, c_ExtAcc_AuxArray );
+            ExternalAcc( Acc, x, y, z, ExtAcc_Time, ExtAcc_AuxStruct );
          }
 
 //       self-gravity

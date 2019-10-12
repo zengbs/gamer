@@ -42,15 +42,15 @@
 // Return      :  Acc
 //-----------------------------------------------------------------------------------------
 GPU_DEVICE
-void ExternalAcc( real Acc[], const double x, const double y, const double z, const double Time, const double UserArray[] )
+void ExternalAcc( real Acc[], const double x, const double y, const double z, 
+				  const double Time, ExtAcc_AuxStruct_t ExtAcc_AuxStruct )
 {
 
-   const double Cen[3] = { UserArray[0], UserArray[1], UserArray[2] };
-   const real GM       = (real)UserArray[3];
-   const real eps      = (real)UserArray[4];
-   const real dx       = (real)(x - Cen[0]);
-   const real dy       = (real)(y - Cen[1]);
-   const real dz       = (real)(z - Cen[2]);
+   const real GM       = (real)ExtAcc_AuxStruct.GM;
+   const real eps      = (real)ExtAcc_AuxStruct.Eps;
+   const real dx       = (real)(x - ExtAcc_AuxStruct.Center[0]);
+   const real dy       = (real)(y - ExtAcc_AuxStruct.Center[1]);
+   const real dz       = (real)(z - ExtAcc_AuxStruct.Center[2]);
    const real r        = SQRT( dx*dx + dy*dy + dz*dz );
 
 // Plummer
@@ -69,6 +69,17 @@ void ExternalAcc( real Acc[], const double x, const double y, const double z, co
    Acc[0] = -GM*_r3*dx;
    Acc[1] = -GM*_r3*dy;
    Acc[2] = -GM*_r3*dz;
+
+   real *Table_Acc, *Table_R;
+   int ExtAcc_NBin;
+
+   Table_Acc    =ExtAcc_AuxStruct.ExtAcc_Table_Acc;
+   Table_R     = ExtAcc_AuxStruct.ExtAcc_Table_R;
+   ExtAcc_NBin = ExtAcc_AuxStruct.ExtAcc_NBin;  
+
+   Acc[0] = Mis_InterpolateFromTable( ExtAcc_NBin, Table_R, Table_Acc, r ) * dx / r;
+   Acc[1] = Mis_InterpolateFromTable( ExtAcc_NBin, Table_R, Table_Acc, r ) * dy / r;
+   Acc[2] = Mis_InterpolateFromTable( ExtAcc_NBin, Table_R, Table_Acc, r ) * dz / r;
 
 } // FUNCTION : ExternalAcc
 

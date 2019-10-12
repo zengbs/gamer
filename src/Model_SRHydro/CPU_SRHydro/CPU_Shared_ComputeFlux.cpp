@@ -33,7 +33,7 @@ void SRHydro_RiemannSolver_HLLC( const int XYZ, real Flux_Out[], const real L_In
 #endif
 
 #ifdef UNSPLIT_GRAVITY
-void ExternalAcc( real Acc[], const double x, const double y, const double z, const double Time, const double UserArray[] );
+void ExternalAcc( real Acc[], const double x, const double y, const double z, const double Time, ExtAcc_AuxStruct_t ExtAcc_AuxStruct );
 #endif
 
 #endif // #ifdef __CUDACC__ ... else ...

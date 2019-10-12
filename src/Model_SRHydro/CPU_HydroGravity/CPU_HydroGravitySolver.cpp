@@ -20,7 +20,8 @@
 
 
 // variables reside in constant memory
-__constant__ double c_ExtAcc_AuxArray[EXT_ACC_NAUX_MAX];
+//__constant__ double c_ExtAcc_AuxArray[EXT_ACC_NAUX_MAX];
+
 
 //-------------------------------------------------------------------------------------------------------
 // Function    :  CUPOT_SetConstMem_HydroGravitySolver
@@ -34,10 +35,10 @@ __constant__ double c_ExtAcc_AuxArray[EXT_ACC_NAUX_MAX];
 // Return      :  0/-1 : successful/failed
 //---------------------------------------------------------------------------------------------------
 __host__
-int CUPOT_SetConstMem_HydroGravitySolver( double h_ExtAcc_AuxArray[] )
+int CUPOT_SetConstMem_HydroGravitySolver( double h_Ptr[] )
 {
 
-   if (  cudaSuccess != cudaMemcpyToSymbol( c_ExtAcc_AuxArray, h_ExtAcc_AuxArray, EXT_ACC_NAUX_MAX*sizeof(double),
+   if (  cudaSuccess != cudaMemcpyToSymbol( c_ExtAcc_AuxArray, h_Ptr, EXT_ACC_NAUX_MAX*sizeof(double),
                                             0, cudaMemcpyHostToDevice)  )
       return -1;
 
@@ -108,7 +109,7 @@ void CPU_HydroGravitySolver(
          char   g_DE_Array     [][ CUBE(PS1) ],
    const int NPatchGroup,
    const real dt, const real dh, const bool P5_Gradient,
-   const OptGravityType_t GravityType, const double c_ExtAcc_AuxArray[],
+   const OptGravityType_t GravityType, ExtAcc_AuxStruct_t ExtAcc_AuxStruct, 
    const double TimeNew, const double TimeOld, const real MinEint )
 #endif
 {
@@ -222,11 +223,11 @@ void CPU_HydroGravitySolver(
             y = g_Corner_Array[P][1] + (double)(j_g0*dh);
             z = g_Corner_Array[P][2] + (double)(k_g0*dh);
 
-            ExternalAcc( acc_new, x, y, z, TimeNew, c_ExtAcc_AuxArray );
+            ExternalAcc( acc_new, x, y, z, TimeNew, ExtAcc_AuxStruct );
             for (int d=0; d<3; d++)    acc_new[d] *= dt;
 
 #           ifdef UNSPLIT_GRAVITY
-            ExternalAcc( acc_old, x, y, z, TimeOld, c_ExtAcc_AuxArray );
+            ExternalAcc( acc_old, x, y, z, TimeOld, ExtAcc_AuxStruct );
             for (int d=0; d<3; d++)    acc_old[d] *= dt;
 #           endif
          }

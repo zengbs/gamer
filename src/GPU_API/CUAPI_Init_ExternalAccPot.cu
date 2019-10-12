@@ -6,7 +6,6 @@
 #include "CUPOT.h"
 
 extern double ExtPot_AuxArray[EXT_POT_NAUX_MAX];
-extern double ExtAcc_AuxArray[EXT_ACC_NAUX_MAX];
 
 
 // declare all GPU kernels requiring ExtPot_AuxArray[] and/or ExtAcc_AuxArray[]

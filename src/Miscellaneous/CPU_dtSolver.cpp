@@ -6,7 +6,7 @@
 #ifdef GRAVITY
 #include "CUPOT.h"
 extern double ExtPot_AuxArray[EXT_POT_NAUX_MAX];
-extern double ExtAcc_AuxArray[EXT_ACC_NAUX_MAX];
+extern ExtAcc_AuxStruct_t ExtAcc_AuxStruct;
 #endif
 
 
@@ -33,7 +33,7 @@ void CPU_dtSolver_HydroGravity( real g_dt_Array[],
                                 const real g_Pot_Array[][ CUBE(GRA_NXT) ],
                                 const double g_Corner_Array[][3],
                                 const int NPatchGroup, const real dh, const real Safety, const bool P5_Gradient,
-                                const OptGravityType_t GravityType, const double c_ExtAcc_AuxArray[],
+                                const OptGravityType_t GravityType, ExtAcc_AuxStruct_t ExtAcc_AuxStruct,
                                 const double ExtAcc_Time );
 #endif
 
@@ -88,7 +88,7 @@ void CPU_dtSolver( const Solver_t TSolver, real dt_Array[], const real Flu_Array
 #     ifdef GRAVITY
       case DT_GRA_SOLVER:
          CPU_dtSolver_HydroGravity( dt_Array, Pot_Array, Corner_Array, NPatchGroup, dh, Safety, P5_Gradient,
-                                    GravityType, ExtAcc_AuxArray, TargetTime );
+                                    GravityType, ExtAcc_AuxStruct, TargetTime );
       break;
 #     endif
 
@@ -104,7 +104,7 @@ void CPU_dtSolver( const Solver_t TSolver, real dt_Array[], const real Flu_Array
 #     ifdef GRAVITY
       case DT_GRA_SOLVER:
          CPU_dtSolver_HydroGravity( dt_Array, Pot_Array, Corner_Array, NPatchGroup, dh, Safety, P5_Gradient,
-                                    GravityType, ExtAcc_AuxArray, TargetTime );
+                                    GravityType, ExtAcc_AuxStruct, TargetTime );
       break;
 #     endif
 
