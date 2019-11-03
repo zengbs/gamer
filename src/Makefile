@@ -37,7 +37,7 @@ SIMU_OPTION += -DMODEL=SR_HYDRO
 #SIMU_OPTION += -DMODEL=HYDRO
 
 # enable gravity
-SIMU_OPTION += -DGRAVITY
+#SIMU_OPTION += -DGRAVITY
 
 # enable particles
 # --> must enable GRAVITY
@@ -106,12 +106,12 @@ else ifeq "$(filter -DMODEL=SR_HYDRO, $(SIMU_OPTION))" "-DMODEL=SR_HYDRO"
 # --> must be set when MODEL=HYDRO;
 SIMU_OPTION += -DFLU_SCHEME=MHM
 
-SIMU_OPTION += -DEOS=APPROXIMATED_GENERAL
+#SIMU_OPTION += -DEOS=APPROXIMATED_GENERAL
 
-#SIMU_OPTION += -DEOS=CONSTANT_GAMMA
+SIMU_OPTION += -DEOS=CONSTANT_GAMMA
 
 # conserved energy = (total energy)
-SIMU_OPTION += -DCONSERVED_ENERGY=1
+SIMU_OPTION += -DCONSERVED_ENERGY=2
 # conserved energy = (total energy) - (rest mass energy)
 #SIMU_OPTION += -DCONSERVED_ENERGY=2
 #SIMU_OPTION += -DCHECK_MIN_TEMP
@@ -122,7 +122,7 @@ SIMU_OPTION += -DLR_SCHEME=PLM
 
 # Riemann solver: EXACT/ROE/HLLE/HLLC
 # --> all are useless for RTVD;
-SIMU_OPTION += -DRSOLVER=HLLC
+SIMU_OPTION += -DRSOLVER=HLLE
 
 # dual energy formalism: DE_ENPY/DE_EINT (evolve entropy or internal energy)
 # --> DE_EINT is not supported yet; useless for RTVD

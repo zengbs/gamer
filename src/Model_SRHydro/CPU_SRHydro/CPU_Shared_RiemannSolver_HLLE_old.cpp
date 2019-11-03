@@ -87,10 +87,8 @@ void SRHydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In
    gammasql = SQR(lFactor);
    gammasqr = SQR(rFactor);
 
-   //ssl = cslsq / FMA( - gammasql, cslsq, gammasql ); /* Mignone Eq 22.5 */
-   //ssr = csrsq / FMA( - gammasqr, csrsq, gammasqr ); /* Mignone Eq 22.5 */
-   ssl = cslsq; /* Mignone Eq 22.5 */
-   ssr = csrsq; /* Mignone Eq 22.5 */
+   ssl = cslsq / FMA( - gammasql, cslsq, gammasql ); /* Mignone Eq 22.5 */
+   ssr = csrsq / FMA( - gammasqr, csrsq, gammasqr ); /* Mignone Eq 22.5 */
 
 
 #  ifdef CHECK_FAILED_CELL_IN_FLUID
@@ -106,25 +104,18 @@ void SRHydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In
    real __gammasql = (real)1.0 / gammasql;
    real __gammasqr = (real)1.0 / gammasqr;
 
-   //real deltal = ssl*ssl + ssl*( __gammasql + lV2s + lV3s );
-   //real deltar = ssr*ssr + ssr*( __gammasqr + rV2s + rV3s );
-   real deltal = ssl;
-   real deltar = ssr;
+   real deltal = ssl*ssl + ssl*( __gammasql + lV2s + lV3s );
+   real deltar = ssr*ssr + ssr*( __gammasqr + rV2s + rV3s );
 
-   //real ssl__ = (real)1.0 + ssl;
-   //real ssr__ = (real)1.0 + ssr;
+   real ssl__ = (real)1.0 + ssl;
+   real ssr__ = (real)1.0 + ssr;
 
 
-   //lmdapl = ( lV1 + SQRT(deltal) ) / ssl__ ;
-   //lmdaml = ( lV1 - SQRT(deltal) ) / ssl__ ;
+   lmdapl = ( lV1 + SQRT(deltal) ) / ssl__ ;
+   lmdaml = ( lV1 - SQRT(deltal) ) / ssl__ ;
 
-   //lmdapr = ( rV1 + SQRT(deltar) ) / ssr__ ;
-   //lmdamr = ( rV1 - SQRT(deltar) ) / ssr__ ;
-   lmdapl = -lV1*ssl - POW(ssl, 1.50) + lV1 + SQRT(ssl);
-   lmdaml = -lV1*ssl + POW(ssl, 1.50) + lV1 - SQRT(ssl);
-                                           
-   lmdapr = -rV1*ssr - POW(ssr, 1.50) + rV1 + SQRT(ssr);
-   lmdamr = -rV1*ssr + POW(ssr, 1.50) + rV1 - SQRT(ssr);
+   lmdapr = ( rV1 + SQRT(deltar) ) / ssr__ ;
+   lmdamr = ( rV1 - SQRT(deltar) ) / ssr__ ;
 
    lmdal = FMIN(lmdaml, lmdamr); /* Mignone Eq 21 */
    lmdar = FMAX(lmdapl, lmdapr);
@@ -136,22 +127,13 @@ void SRHydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In
      Fl[1] = FMA(CL[1], lV1, PL[4]);
      Fl[2] = CL[2] * lV1;
      Fl[3] = CL[3] * lV1;
-#   if ( CONSERVED_ENERGY == 1 )
      Fl[4] = CL[1];
-#   elif ( CONSERVED_ENERGY == 2 )
-     Fl[4] = CL[1] - Fl[0];
-#   endif
 
      Fr[0] = CR[0] * rV1;
      Fr[1] = FMA(CR[1], rV1, PR[4]);
      Fr[2] = CR[2] * rV1;
      Fr[3] = CR[3] * rV1;
-#   if ( CONSERVED_ENERGY == 1 )
      Fr[4] = CR[1];
-#   elif ( CONSERVED_ENERGY == 2 )
-     Fr[4] = CR[1] - Fr[0];
-#   endif
-
  /* 7. Determine intercell flux according to Mignone 13
  */
   if( lmdal >= (real)0.0 ){ /* Fl */
@@ -160,7 +142,11 @@ void SRHydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In
     Flux_Out[1] = Fl[1];
     Flux_Out[2] = Fl[2];
     Flux_Out[3] = Fl[3];
+#   if ( CONSERVED_ENERGY == 1 )
     Flux_Out[4] = Fl[4];
+#   elif ( CONSERVED_ENERGY == 2 )
+    Flux_Out[4] = Fl[4] - Fl[0];
+#   endif
 
    SRHydro_Rotate3D( Flux_Out, XYZ, false );
    return;
@@ -172,24 +158,27 @@ void SRHydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In
     ovlrmll = (real)1.0 / ( lmdar - lmdal );
     lmdatlmda = lmdal*lmdar;
 
-    real ratio = lmdal/lmdar;
+    Fhll[0] = FMA( lmdatlmda, (CR[0] - CL[0]), FMA( lmdar, Fl[0], - lmdal*Fr[0] ) ) * ovlrmll;
+    Fhll[1] = FMA( lmdatlmda, (CR[1] - CL[1]), FMA( lmdar, Fl[1], - lmdal*Fr[1] ) ) * ovlrmll;
+    Fhll[2] = FMA( lmdatlmda, (CR[2] - CL[2]), FMA( lmdar, Fl[2], - lmdal*Fr[2] ) ) * ovlrmll;
+    Fhll[3] = FMA( lmdatlmda, (CR[3] - CL[3]), FMA( lmdar, Fl[3], - lmdal*Fr[3] ) ) * ovlrmll;
 
-    //Fhll[0] = FMA( lmdatlmda, (CR[0] - CL[0]), FMA( lmdar, Fl[0], - lmdal*Fr[0] ) ) * ovlrmll;
-    //Fhll[1] = FMA( lmdatlmda, (CR[1] - CL[1]), FMA( lmdar, Fl[1], - lmdal*Fr[1] ) ) * ovlrmll;
-    //Fhll[2] = FMA( lmdatlmda, (CR[2] - CL[2]), FMA( lmdar, Fl[2], - lmdal*Fr[2] ) ) * ovlrmll;
-    //Fhll[3] = FMA( lmdatlmda, (CR[3] - CL[3]), FMA( lmdar, Fl[3], - lmdal*Fr[3] ) ) * ovlrmll;
-    Fhll[0] = FMA( lmdal, (CR[0] - CL[0]), FMA( 1.0, Fl[0], - ratio*Fr[0] ) ) / (1.0-ratio) ;
-    Fhll[1] = FMA( lmdal, (CR[1] - CL[1]), FMA( 1.0, Fl[1], - ratio*Fr[1] ) ) / (1.0-ratio) ;
-    Fhll[2] = FMA( lmdal, (CR[2] - CL[2]), FMA( 1.0, Fl[2], - ratio*Fr[2] ) ) / (1.0-ratio) ;
-    Fhll[3] = FMA( lmdal, (CR[3] - CL[3]), FMA( 1.0, Fl[3], - ratio*Fr[3] ) ) / (1.0-ratio) ;
-    Fhll[4] = FMA( lmdal, (CR[4] - CL[4]), FMA( 1.0, Fl[4], - ratio*Fr[4] ) ) / (1.0-ratio) ;
+#   if ( CONSERVED_ENERGY == 1 )
+    Fhll[4] = FMA( lmdatlmda, (CR[4] - CL[4]), FMA( lmdar, Fl[4], - lmdal*Fr[4] ) ) * ovlrmll;
+#   elif ( CONSERVED_ENERGY == 2 )
+    Fhll[4] = (lmdar*Fl[4] - lmdal*Fr[4] + lmdatlmda * (CR[4] + CR[0] - CL[4] - CL[0])) * ovlrmll;
+#   endif
 
     /* calculate Fs */
     Flux_Out[0] = Fhll[0];
     Flux_Out[1] = Fhll[1];
     Flux_Out[2] = Fhll[2];
     Flux_Out[3] = Fhll[3];
+#   if ( CONSERVED_ENERGY == 1 )
     Flux_Out[4] = Fhll[4];
+#   elif ( CONSERVED_ENERGY == 2 )
+    Flux_Out[4] = Fhll[4] - Fhll[0];
+#   endif
 
     SRHydro_Rotate3D( Flux_Out, XYZ, false );
     return;
@@ -201,7 +190,11 @@ void SRHydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In
     Flux_Out[1] = Fr[1];
     Flux_Out[2] = Fr[2];
     Flux_Out[3] = Fr[3];
+#   if ( CONSERVED_ENERGY == 1 )
     Flux_Out[4] = Fr[4];
+#   elif ( CONSERVED_ENERGY == 2 )
+    Flux_Out[4] = Fr[4] - Fr[0];
+#   endif
 
     SRHydro_Rotate3D( Flux_Out, XYZ, false );
     return;

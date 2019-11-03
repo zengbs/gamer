@@ -184,8 +184,8 @@ real SRHydro_GetTemperature (const real Dens, const real MomX, const real MomY, 
   }
 # endif 
 
-  NewtonRaphsonSolver(&params ,&root, guess, (real) TINY_NUMBER, (real) EPSILON, Gamma);
-  //root = Constant / (real)3.0;
+  //NewtonRaphsonSolver(&params ,&root, guess, (real) TINY_NUMBER, (real) EPSILON, Gamma);
+  root = guess;
   return root;
 }				// FUNCTION : SRHydro_GetTemperature
 
@@ -262,39 +262,56 @@ real SRHydro_Con2Pri (const real In[], real Out[], const real Gamma, const real 
 {
    real Temp = SRHydro_GetTemperature (In[DENS], In[MOMX], In[MOMY], In[MOMZ], In[ENGY], Gamma, MinTemp );
 
-   real h = SpecificEnthalpy(In, Temp, Gamma);
+   real epsilon =  Gamma*Temp/(Gamma-1.0) ;
+   //real h = SpecificEnthalpy(In, Temp, Gamma);
 
-   real factor = In[0]*h;
-   Out[1] = In[1]/factor;
-   Out[2] = In[2]/factor;
-   Out[3] = In[3]/factor;
+   //real factor = In[0]*h;
+   //Out[1] = In[1]/factor;
+   //Out[2] = In[2]/factor;
+   //Out[3] = In[3]/factor;
+   Out[1] = In[1]*epsilon*epsilon/In[0] - In[1]*epsilon/In[0] + In[1]/In[0]; 
+   Out[2] = In[2]*epsilon*epsilon/In[0] - In[2]*epsilon/In[0] + In[2]/In[0];
+   Out[3] = In[3]*epsilon*epsilon/In[0] - In[3]*epsilon/In[0] + In[3]/In[0];
 
-   real Lorentz = SQRT((real)1.0 + VectorDotProduct(Out[1], Out[2], Out[3]));
+   //real Lorentz = SQRT((real)1.0 + VectorDotProduct(Out[1], Out[2], Out[3]));
 
-   Out[0] = In[0]/Lorentz;
+   real Usqr = VectorDotProduct(Out[1], Out[2], Out[3]);
+
+   //Out[0] = In[0]/Lorentz;
+   Out[0] = - 0.125*SQR(Usqr)*In[0] + In[0]*0.5*Usqr + In[0];
    Out[4] = Out[0] * Temp; // P = rho*kB*T*c**2
 
-   return Lorentz;
+   //return Lorentz;
+   return -0.125*SQR(Usqr)+0.5*Usqr+1.0 ;
 }// FUNCTION : SRHydro_Con2Pri
 
 
 GPU_DEVICE
 void SRHydro_Pri2Con (const real In[], real Out[], const real Gamma)
 {
-  real h = SpecificEnthalpy( NULL, In[4]/In[0], Gamma );
-  real nh   = In[0] * h;
+  //real h = SpecificEnthalpy( NULL, In[4]/In[0], Gamma );
+  //real nh   = In[0] * h;
 
-  real Factor0 = (real)1.0 + VectorDotProduct(In[1], In[2], In[3]);
-  real Factor1 = SQRT(Factor0); // Lorentz factor
+  //real Factor0 = (real)1.0 + VectorDotProduct(In[1], In[2], In[3]);
+  //real Factor1 = SQRT(Factor0); // Lorentz factor
   
-  Out[0] = In[0] * Factor1; // mass density in inertial frame
-  Out[1] = Out[0]*h*In[1]; // MomX
-  Out[2] = Out[0]*h*In[2]; // MomX
-  Out[3] = Out[0]*h*In[3]; // MomX
+  real Temp = In[4]/In[0];
+  real epsilon =  Gamma*Temp/(Gamma-1.0) ;
+  real Usqr = VectorDotProduct(In[1], In[2], In[3]);
+  //Out[0] = In[0] * Factor1; // mass density in inertial frame
+  Out[0] = -0.125*SQR(Usqr)*In[0]  + In[0] * 0.5 * Usqr + In[0] ; // mass density in inertial frame
+  //Out[1] = Out[0]*h*In[1]; // MomX
+  //Out[2] = Out[0]*h*In[2]; // MomX
+  //Out[3] = Out[0]*h*In[3]; // MomX
+  Out[1] = Out[0]*In[1]*epsilon+Out[0]*In[1]; // MomX
+  Out[2] = Out[0]*In[2]*epsilon+Out[0]*In[2]; // MomX
+  Out[3] = Out[0]*In[3]*epsilon+Out[0]*In[3]; // MomX
 # if   ( CONSERVED_ENERGY == 1 )
   Out[4] = FMA( nh, Factor0, - In[4] ); // total_energy
 # elif ( CONSERVED_ENERGY == 2 )
-  Out[4] = nh * Factor0 - In[4] - Out[0]; // ( total_energy ) - ( rest_mass_energy )
+  //Out[4] = nh * Factor0 - In[4] - Out[0]; // ( total_energy ) - ( rest_mass_energy )
+  //Out[4] = In[0]*Factor1*( VectorDotProduct(In[1], In[2], In[3])*0.5+ epsilon*Factor1 ) - In[4];
+  Out[4] = In[0] * ( 0.25*epsilon*SQR(Usqr)+0.25*SQR(Usqr)+epsilon*Usqr+0.5*Usqr + epsilon) - In[4];
 # else
 # error: CONSERVED_ENERGY must be 1 or 2!
 # endif
@@ -307,12 +324,16 @@ void SRHydro_Pri2Con (const real In[], real Out[], const real Gamma)
 GPU_DEVICE
 void SRHydro_4Velto3Vel ( const real In[], real Out[])
 {
-  real Factor = (real)1.0 / SQRT ((real)1.0 + VectorDotProduct(In[1], In[2], In[3]));
+  //real Factor = (real)1.0 / SQRT ((real)1.0 + VectorDotProduct(In[1], In[2], In[3]));
+  real Usqr = VectorDotProduct(In[1], In[2], In[3]);
 
   Out[0] = In[0];
-  Out[1] = In[1] * Factor;
-  Out[2] = In[2] * Factor;
-  Out[3] = In[3] * Factor;
+  //Out[1] = In[1] * Factor;
+  //Out[2] = In[2] * Factor;
+  //Out[3] = In[3] * Factor;
+  Out[1] = 0.375*SQR(Usqr)* In[1] -0.5*Usqr* In[1] + In[1];
+  Out[2] = 0.375*SQR(Usqr)* In[2] -0.5*Usqr* In[2] + In[2];
+  Out[3] = 0.375*SQR(Usqr)* In[3] -0.5*Usqr* In[3] + In[3];
   Out[4] = In[4];
 }				// FUNCTION : SRHydro_4Velto3Vel
 
@@ -323,12 +344,16 @@ void SRHydro_4Velto3Vel ( const real In[], real Out[])
 GPU_DEVICE
 void SRHydro_3Velto4Vel (const real In[], real Out[])
 {
-  real Factor = (real)1.0 / SQRT ((real)1.0 - VectorDotProduct(In[1], In[2], In[3]));
+  //real Factor = (real)1.0 / SQRT ((real)1.0 - VectorDotProduct(In[1], In[2], In[3]));
+  real Vsqr = VectorDotProduct(In[1], In[2], In[3]);
 
   Out[0] = In[0];
-  Out[1] = In[1] * Factor;
-  Out[2] = In[2] * Factor;
-  Out[3] = In[3] * Factor;
+  //Out[1] = In[1] * Factor;
+  //Out[2] = In[2] * Factor;
+  //Out[3] = In[3] * Factor;
+  Out[1] = 0.375*SQR(Vsqr)* In[1] +0.5*Vsqr* In[1] + In[1];
+  Out[2] = 0.375*SQR(Vsqr)* In[2] +0.5*Vsqr* In[2] + In[2];
+  Out[3] = 0.375*SQR(Vsqr)* In[3] +0.5*Vsqr* In[3] + In[3];
   Out[4] = In[4];
 }				// FUNCTION : SRHydro_4Velto3Vel
 
@@ -353,9 +378,10 @@ void SRHydro_Con2Flux (const int XYZ, real Flux[], const real Con[], const real 
   SRHydro_Rotate3D (ConVar, XYZ, true);
   SRHydro_Rotate3D (PriVar, XYZ, true);
 
-  real Lorentz = SQRT((real)1.0 + VectorDotProduct(PriVar[1], PriVar[2], PriVar[3]));
+  //real Lorentz = SQRT((real)1.0 + VectorDotProduct(PriVar[1], PriVar[2], PriVar[3]));
+  real Usqr = VectorDotProduct(PriVar[1], PriVar[2], PriVar[3]);
 
-  real Vx = PriVar[1] / Lorentz;
+  real Vx = -0.125*SQR(Usqr)*PriVar[1]  - PriVar[1] * 0.5 * Usqr +  PriVar[1];
 
   Flux[0] = ConVar[0] * Vx;
   Flux[1] = FMA( ConVar[1], Vx, PriVar[4] );
