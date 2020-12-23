@@ -333,8 +333,7 @@ void SetParameter()
 // (4) reset other general-purpose parameters
 //     --> a helper macro PRINT_WARNING is defined in TestProb.h
    const long   End_Step_Default = __INT_MAX__;
-   const double Jet_Src3Vel      = Jet_SrcVel / sqrt(1.0 + Jet_SrcVel*Jet_SrcVel);
-   const double End_T_Default    = 10.0*BOX_SIZE            * UNIT_L / (Jet_Src3Vel        *UNIT_V) / UNIT_T;
+   const double End_T_Default    = 10.0*BOX_SIZE * UNIT_L / (CharacteristicSpeed *UNIT_V) / UNIT_T;
 
    if ( END_STEP < 0 ) {
       END_STEP = End_Step_Default;
@@ -394,7 +393,7 @@ void SetParameter()
 
    if ( MPI_Rank == 0 )
    {
-     Aux_Message( stdout, "  CharacteristicSpeed      = %14.7e c\n",          CharacteristicSpeed / UNIT_T                    );
+     Aux_Message( stdout, "  CharacteristicSpeed      = %14.7e c\n",          CharacteristicSpeed / UNIT_V                    );
    }
 
 

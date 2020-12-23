@@ -36,7 +36,7 @@ COMPILE_VERBOSE := 0
 SIMU_OPTION += -DMODEL=HYDRO
 
 # enable gravity
-#SIMU_OPTION += -DGRAVITY
+SIMU_OPTION += -DGRAVITY
 
 # enable particles
 # --> must enable GRAVITY
@@ -138,7 +138,7 @@ SIMU_OPTION += -DSTORE_POT_GHOST
 
 # use unsplitting method to couple gravity to the target model (recommended)
 # --> for HYDRO only; ELBDM is not supported yet
-SIMU_OPTION += -DUNSPLIT_GRAVITY
+#SIMU_OPTION += -DUNSPLIT_GRAVITY
 
 # comoving frame for cosmological simulations
 # --> not supported for PARTICLE
@@ -168,7 +168,7 @@ endif # PARTICLE
 # --> must be set in any cases
 SIMU_OPTION += -DNLEVEL=10
 
-# maximum number of patches on each AMR level
+# maximum number of patches on each AMR level per node
 # --> must be set in any cases
 SIMU_OPTION += -DMAX_PATCH=1000000
 

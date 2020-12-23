@@ -168,7 +168,7 @@ endif # PARTICLE
 # --> must be set in any cases
 SIMU_OPTION += -DNLEVEL=10
 
-# maximum number of patches on each AMR level
+# maximum number of patches on each AMR level per node
 # --> must be set in any cases
 SIMU_OPTION += -DMAX_PATCH=1000000
 
