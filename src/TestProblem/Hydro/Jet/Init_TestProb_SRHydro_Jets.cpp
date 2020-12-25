@@ -260,7 +260,7 @@ void SetParameter()
    if ( !Jet_Ambient ) // uniform (Jet_Ambient == true)
    {
 #     ifdef GRAVITY
-      //Aux_Error( ERROR_INFO, "GRAVITY must be disabled !!\n" );
+      Aux_Error( ERROR_INFO, "GRAVITY must be disabled !!\n" );
 #     endif
    }
 
@@ -277,7 +277,6 @@ void SetParameter()
 
 // (1-2) convert to code unit
    Jet_SrcVel               *= Const_c   / UNIT_V;
-   //Jet_SrcTemp              *= Const_GeV / ( Jet_ParticleMassSrc * SQR(Const_c) );
    Jet_SrcTemp              *= Const_kB_eV / (Jet_ParticleMassSrc*Const_c*Const_c*Const_Erg2eV);
    Jet_SrcDens              *= 1.0       / UNIT_D;
 
@@ -300,7 +299,6 @@ void SetParameter()
    }
    
 
-   //Amb_UniformTemp          *= Const_GeV / ( Jet_ParticleMassAmbient * SQR(Const_c) );
    Amb_UniformTemp         *= Const_kB_eV / (Jet_ParticleMassAmbient*Const_c*Const_c*Const_Erg2eV);
    Jet_AngularVelocity     *= 1.0;    // the unit of Jet_AngularVelocity is UNIT_T
 
