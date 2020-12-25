@@ -747,17 +747,6 @@ void CartesianRotate( double x[], double theta, double phi, bool inverse )
   for (int i=0;i<3;i++) x[i] = xp[i];
 }
 
-static void Init_ByFile( real fluid_out[], const real fluid_in[], const int nvar_in,
-                         const double x, const double y, const double z, const double Time,
-                         const int lv, double AuxArray[] )
-{
-       fluid_out[DENS] = fluid_in[DENS]/UNIT_D;
-       fluid_out[MOMX] = fluid_in[MOMX]/UNIT_D;
-       fluid_out[MOMY] = fluid_in[MOMY]/UNIT_D;
-       fluid_out[MOMZ] = fluid_in[MOMZ]/UNIT_D;
-       fluid_out[ENGY] = fluid_in[ENGY]/UNIT_D;
-}
-
 //-------------------------------------------------------------------------------------------------------
 // Function    :  Init_TestProb_Hydro_Jets
 // Description :  Test problem initializer
@@ -792,7 +781,6 @@ void Init_TestProb_Hydro_Jets()
    Output_User_Ptr          = NULL;
    Aux_Record_User_Ptr      = NULL;
    End_User_Ptr             = NULL;
-   Init_ByFile_User_Ptr     = Init_ByFile;
 #  ifdef GRAVITY
    Init_ExtAcc_Ptr          = NULL;
 #  endif
