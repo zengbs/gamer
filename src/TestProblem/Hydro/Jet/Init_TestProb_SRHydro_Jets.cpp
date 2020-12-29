@@ -256,14 +256,6 @@ void SetParameter()
 
 
 
-// check uniform ambient
-   if ( !Jet_Ambient ) // uniform (Jet_Ambient == true)
-   {
-#     ifdef GRAVITY
-      Aux_Error( ERROR_INFO, "GRAVITY must be disabled !!\n" );
-#     endif
-   }
-
    if ( Jet_Ambient && OPT__INIT != 3 )
    {
       Aux_Error( ERROR_INFO, "OPT__INIT must be 3 !!\n" );
