@@ -771,9 +771,6 @@ void Init_TestProb_Hydro_Jets()
    Output_User_Ptr          = NULL;
    Aux_Record_User_Ptr      = NULL;
    End_User_Ptr             = NULL;
-#  ifdef GRAVITY
-   Init_ExtAcc_Ptr          = NULL;
-#  endif
 
 
    if ( MPI_Rank == 0 )    Aux_Message( stdout, "%s ... done\n", __FUNCTION__ );

@@ -49,7 +49,7 @@ void Init_ExtAccPot()
       if ( OPT__EXT_POT == EXT_POT_TABLE  &&  Init_ExtPot_Ptr == NULL )    Init_ExtPot_Ptr = Init_ExtPot_Tabular;
 
       if ( Init_ExtPot_Ptr != NULL )   Init_ExtPot_Ptr();
-      else                             Aux_Error( ERROR_INFO, "Init_ExtPot_Ptr == NULL !!\n" );
+      else                             Aux_Error( ERROR_INFO, "Init_ExtPot_Ptr == NULL !! Make sure OPT__EXT_POT is set properly !!\n" );
    }
 
 
