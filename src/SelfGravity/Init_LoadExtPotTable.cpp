@@ -115,7 +115,7 @@ void Init_LoadExtPotTable()
 // normalized external potential by UNIT_D*UNIT_V**2
    if ( OPT__UNIT )
       for (long int Idx=0; Idx<NPoint3D; Idx++  )
-          h_ExtPotTable[Idx] /= UNIT_D * UNIT_V * UNIT_V;
+          h_ExtPotTable[Idx] /= UNIT_V * UNIT_V;
 
 // transfer table to GPU
 #  ifdef GPU
