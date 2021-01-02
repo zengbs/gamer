@@ -62,6 +62,8 @@ MilkyWay_Ne0                                    2.0         # electron number de
 MilkyWay_Center_x                              25.0         # (kpc) 
 MilkyWay_Center_y                              25.0         # (kpc)
 MilkyWay_Center_z                              25.0         # (kpc)
+MilkyWay_TrunRhoRatio                         500.0
+MilkyWay_Trun                                     1
 
 
 # time-dependent source varibles
