@@ -339,7 +339,7 @@ double VecPot_Interp( const double field[], const double xx, const double yy,
 //-------------------------------------------------------------------------------------------------------
 // Function    :  TSC_Weight
 // Description :  Function to compute second-order interpolation on a uniform
-//                grid to arbitrary points
+//                grid to arbitrary points. See Eq(5-88) in "Computer Simulation using Particles"
 //
 // Parameter   :  x : Scaled coordinate for the TSC kernel
 //
