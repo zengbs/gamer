@@ -101,7 +101,7 @@ static real ExtPot_MilkyWay( const double x, const double y, const double z, con
    const real   Bulge_d               = (real)UserArray_Flt[ 7];   // 
    const real   GDiskM                = (real)UserArray_Flt[ 8];   // 
    const real   GBulgeM               = (real)UserArray_Flt[ 9];   // 
-   const real   MilkyWay_TrunRhoRatio =       UserArray_Flt[10];   // 
+   const real   MilkyWay_TrunRhoRatio = (real)UserArray_Flt[10];   // 
    const real   MilkyWay_Temperature  = (real)UserArray_Flt[11];   // 
 
    const int   MilkyWay_Trun          =       UserArray_Int[ 0];   // 
@@ -109,6 +109,7 @@ static real ExtPot_MilkyWay( const double x, const double y, const double z, con
    const real   dx  = (real)(x - cx);
    const real   dy  = (real)(y - cy);
    const real   dz  = (real)(z - cz);
+
    const real   r2  = SQR(dx) + SQR(dy) + SQR(dz);
    const real   r   = SQRT(r2);
    const real   dx2 = dx*dx;
@@ -120,6 +121,7 @@ static real ExtPot_MilkyWay( const double x, const double y, const double z, con
           DiskPot /= SQRT( dx2 + dy2 + SQR( Disk_a + SQRT( dz2 + Disk_b2 ) ) );
    real   BulgePot = -GBulgeM/( r + Bulge_d );
 
+
    real TotPot        = HaloPot + DiskPot + BulgePot;
    real TotPotCenter  = Halo_v2*log( Halo_d2 );
         TotPotCenter -= GDiskM / SQRT( SQR( Disk_a + SQRT( Disk_b2 ) ) );
@@ -128,7 +130,7 @@ static real ExtPot_MilkyWay( const double x, const double y, const double z, con
    if ( MilkyWay_Trun == 1 )
    {
       if ( TotPot - TotPotCenter > MilkyWay_Temperature*log(MilkyWay_TrunRhoRatio) )
-         TotPot = TotPotCenter + MilkyWay_Temperature*log(MilkyWay_TrunRhoRatio);
+           TotPot = TotPotCenter + MilkyWay_Temperature*log(MilkyWay_TrunRhoRatio);
    }
 
    return TotPot;

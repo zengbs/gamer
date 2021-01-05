@@ -297,6 +297,7 @@ void SetParameter()
       Aux_Error( ERROR_INFO, "OPT__INIT must be 3 !!\n" );
    }
 
+
 // check UNIT_L is in reasonable range
    if ( ( UNIT_L <= 0.5*Const_kpc || 2.0*Const_kpc <= UNIT_L ) && OPT__UNIT )
       Aux_Error( ERROR_INFO, "UNIT_L=%e is far from %e !!\n", UNIT_L, Const_kpc );
@@ -335,7 +336,6 @@ void SetParameter()
      MilkyWay_Bulge_M       *= Const_Msun  / UNIT_M;
      MilkyWay_Bulge_d       *= Const_kpc   / UNIT_L;
      MilkyWay_Temperature   *= Const_kB    / (MOLECULAR_WEIGHT*AtomicMassUnitAmbient*Const_c*Const_c);
-     MilkyWay_Ne0           *=          CUBE(UNIT_L);
      MilkyWay_Center[0]     *= Const_kpc   / UNIT_L;
      MilkyWay_Center[1]     *= Const_kpc   / UNIT_L;
      MilkyWay_Center[2]     *= Const_kpc   / UNIT_L;
@@ -368,7 +368,6 @@ void SetParameter()
    Jet_MaxDis  = sqrt( SQR( Jet_Radius ) + SQR( Jet_HalfHeight * SecAngle ) + 2.0 * Jet_Radius * Jet_HalfHeight * TanAngle );
 
    for (int d=0; d<3; d++)    Jet_Center[d] = 0.5*amr->BoxSize[d] + Jet_CenOffset[d];
-
 
 
 // (4) reset other general-purpose parameters
@@ -441,7 +440,7 @@ void SetParameter()
      Aux_Message( stdout, "  MilkyWay_Bulge_M         = %14.7e solar-mass\n", MilkyWay_Bulge_M*UNIT_M/Const_Msun              );
      Aux_Message( stdout, "  MilkyWay_Bulge_d         = %14.7e kpc\n",        MilkyWay_Bulge_d*UNIT_L/Const_kpc               );
      Aux_Message( stdout, "  MilkyWay_Temperature     = %14.7e kT/mc**2\n",   MilkyWay_Temperature                            );
-     Aux_Message( stdout, "  MilkyWay_Ne0             = %14.7e 1/cm**3\n",    MilkyWay_Ne0/CUBE(UNIT_L)                       );
+     Aux_Message( stdout, "  MilkyWay_Ne0             = %14.7e 1/cm**3\n",    MilkyWay_Ne0                                    );
      Aux_Message( stdout, "  MilkyWay_Trun            = %d\n",                MilkyWay_Trun                                   );
      Aux_Message( stdout, "  MilkyWay_TrunRhoRatio    = %14.7e\n",            MilkyWay_TrunRhoRatio                           );
      Aux_Message( stdout, "  MilkyWay_Center[0]       = %14.7e kpc\n",        MilkyWay_Center[0]*UNIT_L/Const_kpc             );
@@ -526,7 +525,7 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
    }
    else if ( Jet_Ambient == 1 ) //Milky Way
    {
-      double Pot, Rho, PotCenter_x, PotCenter_y, PotCenter_z, dx, dy, dz, dr;
+      double Pot, Rho, PotCenter_x, PotCenter_y, PotCenter_z;
       double Rho0, MolecularWeightPerElectron, PotCenter;
 
       PotCenter_x = ExtPot_AuxArray_Flt[0];
@@ -535,24 +534,12 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
 
       Pot = CPUExtPot_Ptr( x, y, z, Time, ExtPot_AuxArray_Flt, ExtPot_AuxArray_Int, NULL_INT, NULL );
 
-      if (Pot != Pot)
-      {
-          printf("%s:%d\n", __FUNCTION__, __LINE__);
-          exit(0);
-      }
-   
       PotCenter = CPUExtPot_Ptr( PotCenter_x, PotCenter_y, PotCenter_z, Time, ExtPot_AuxArray_Flt,
                                  ExtPot_AuxArray_Int, NULL_INT, NULL );
 
-      dx = x - PotCenter_x;
-      dy = y - PotCenter_y;
-      dz = z - PotCenter_z;
-
-      dr = sqrt(dx*dx + dy*dy + dz*dz);
-
       MolecularWeightPerElectron = 5.0*MOLECULAR_WEIGHT/(2.0 + MOLECULAR_WEIGHT);
     
-      Rho0 = MolecularWeightPerElectron * MilkyWay_Ne0 * AtomicMassUnitAmbient / UNIT_M;
+      Rho0 = MolecularWeightPerElectron * MilkyWay_Ne0 * AtomicMassUnitAmbient / UNIT_D;
 
       Pri[0] = (real)Rho0*exp( -( Pot- PotCenter ) / MilkyWay_Temperature );
       Pri[1] = (real)0.0;

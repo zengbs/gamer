@@ -81,6 +81,13 @@ void Init_GAMER( int *argc, char ***argv )
 #  endif
 
 
+// initialize the EoS routines
+// --> we initialize EoS before test-problem as test-problem might need sound speed
+#  if ( MODEL == HYDRO )
+   EoS_Init();
+#  endif
+
+
 // initialize the test problem parameters
    Init_TestProb();
 
@@ -106,11 +113,6 @@ void Init_GAMER( int *argc, char ***argv )
    Init_ExtAccPot();
 #  endif
 
-
-// initialize the EoS routines
-#  if ( MODEL == HYDRO )
-   EoS_Init();
-#  endif
 
 
 // set the GPU parameters
