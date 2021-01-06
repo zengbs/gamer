@@ -59,9 +59,9 @@ MilkyWay_Bulge_M                             3.4e10         # (solar-mass)
 MilkyWay_Bulge_d                                0.7         # (kpc)
 MilkyWay_Temperature                            2e6         # (K)
 MilkyWay_Ne0                                    2.0         # electron number density at Milky Way center (1/cm**3)
-MilkyWay_Center_x                              25.0         # (kpc) 
-MilkyWay_Center_y                              25.0         # (kpc)
-MilkyWay_Center_z                              25.0         # (kpc)
+MilkyWay_Center_x                              -1.0         # (kpc) 
+MilkyWay_Center_y                              -1.0         # (kpc)
+MilkyWay_Center_z                              -1.0         # (kpc)
 MilkyWay_TrunRhoRatio                         500.0
 MilkyWay_Trun                                     1
 

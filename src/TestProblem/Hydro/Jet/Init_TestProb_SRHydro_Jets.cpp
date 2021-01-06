@@ -290,7 +290,14 @@ void SetParameter()
        Aux_Error( ERROR_INFO, "Jet_BurstTempRatio <= Eps_double !!\n" );
    }
 
+   if ( MilkyWay_Center[0] == -1.0 )
+        MilkyWay_Center[0] = 0.5*amr->BoxSize[0];
 
+   if ( MilkyWay_Center[1] == -1.0 )
+        MilkyWay_Center[1] = 0.5*amr->BoxSize[1];
+
+   if ( MilkyWay_Center[2] == -1.0 )
+        MilkyWay_Center[2] = 0.5*amr->BoxSize[2];
 
    if ( Jet_Ambient == 9 && OPT__INIT != 3 )
    {
@@ -531,6 +538,9 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
       PotCenter_x = ExtPot_AuxArray_Flt[0];
       PotCenter_y = ExtPot_AuxArray_Flt[1];
       PotCenter_z = ExtPot_AuxArray_Flt[2];
+
+      if ( CPUExtPot_Ptr == NULL )
+           Aux_Error( ERROR_INFO, "CPUExtPot_Ptr == NULL (see if OPT__EXT_POT is enabled in Init_ExtAccPot.cpp)!!\n" );
 
       Pot = CPUExtPot_Ptr( x, y, z, Time, ExtPot_AuxArray_Flt, ExtPot_AuxArray_Int, NULL_INT, NULL );
 
@@ -877,10 +887,7 @@ void Init_TestProb_Hydro_Jets()
    Output_User_Ptr          = NULL;
    Aux_Record_User_Ptr      = NULL;
    End_User_Ptr             = NULL;
-#  ifdef GRAVITY
-   if ( OPT__EXT_POT == EXT_POT_FUNC )
-   Init_ExtPot_Ptr         = Init_ExtPot_MilkyWay;
-#  endif
+   Init_ExtPot_Ptr          = Init_ExtPot_MilkyWay;
 
 
    if ( MPI_Rank == 0 )    Aux_Message( stdout, "%s ... done\n", __FUNCTION__ );
