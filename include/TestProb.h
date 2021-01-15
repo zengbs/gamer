@@ -35,8 +35,9 @@ extern bool (*Flag_Region_Ptr)( const int i, const int j, const int k, const int
 extern bool (*Flag_User_Ptr)( const int i, const int j, const int k, const int lv, const int PID, const double *Threshold );
 extern void (*Mis_GetTimeStep_User_Ptr)( const int lv, const double dTime_dt );
 extern void (*Aux_Record_User_Ptr)();
-extern void (*BC_User_Ptr)( real fluid[], const double x, const double y, const double z, const double Time,
-                            const int lv, double AuxArray[] );
+extern void (*BC_User_Ptr)( real Array[], const int ArraySize[], real fluid[], const int NVar_Flu,
+           		    const int GhostSize, const int idx[], const double pos[], const double Time,
+			    const int lv, const int TFluVarIdxList[], double AuxArray[] );
 #ifdef MHD
 extern void (*BC_BField_User_Ptr)( real magnetic[], const double x, const double y, const double z, const double Time,
                                    const int lv, double AuxArray[] );
