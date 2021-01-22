@@ -18,7 +18,7 @@ void Init_TestProb_Hydro_Plummer();
 void Init_TestProb_Hydro_Gravity();
 void Init_TestProb_Hydro_JeansInstability();
 void Init_TestProb_Hydro_Jets();
-
+void Init_TestProb_Hydro_JetICMWall();
 #ifdef MHD
 void Init_TestProb_Hydro_MHD_ABC();
 void Init_TestProb_Hydro_MHD_OrszagTangVortex();
@@ -66,6 +66,7 @@ void Init_TestProb()
       case TESTPROB_HYDRO_GRAVITY :                      Init_TestProb_Hydro_Gravity();                     break;
       case TESTPROB_HYDRO_JEANS_INSTABILITY :            Init_TestProb_Hydro_JeansInstability();            break;
       case TESTPROB_HYDRO_JETS:                          Init_TestProb_Hydro_Jets();                        break;
+      case TESTPROB_HYDRO_JET_ICM_WALL:                  Init_TestProb_Hydro_JetICMWall();                  break;
 
 #     ifdef MHD
       case TESTPROB_HYDRO_MHD_ABC :                      Init_TestProb_Hydro_MHD_ABC();                     break;

@@ -139,6 +139,9 @@ void Flu_BoundaryCondition_User( real *Array, const int NVar_Flu, const int Ghos
 #  ifdef MHD
    const double dh_2             = 0.5*dh;
 #  endif
+#  ifdef SRHD
+   real HTilde, Factor;
+#  endif
    const bool   CheckMinPres_Yes = true;
    const bool   PrepVx           = ( TVar & _VELX ) ? true : false;
    const bool   PrepVy           = ( TVar & _VELY ) ? true : false;
@@ -207,9 +210,22 @@ void Flu_BoundaryCondition_User( real *Array, const int NVar_Flu, const int Ghos
       v2 = NVar_Flu;
 
 #     if   ( MODEL == HYDRO )
-      if ( PrepVx   )   Array3D[ v2 ++ ][k][j][i] = BVal[MOMX] / BVal[DENS];
-      if ( PrepVy   )   Array3D[ v2 ++ ][k][j][i] = BVal[MOMY] / BVal[DENS];
-      if ( PrepVz   )   Array3D[ v2 ++ ][k][j][i] = BVal[MOMZ] / BVal[DENS];
+      real Vx, Vy, Vz;
+#     ifdef SRHD
+      HTilde = SRHD_Con2HTilde( BVal, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, 
+				EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table );
+      Factor = BVal[DENS]*((real)1.0 + HTilde);
+      Vx = BVal[MOMX] / Factor;
+      Vy = BVal[MOMY] / Factor;
+      Vz = BVal[MOMZ] / Factor;
+#     else
+      Vx = BVal[MOMX] / BVal[DENS];
+      Vy = BVal[MOMY] / BVal[DENS];
+      Vz = BVal[MOMZ] / BVal[DENS];
+#     endif
+      if ( PrepVx   )   Array3D[ v2 ++ ][k][j][i] = Vx;
+      if ( PrepVy   )   Array3D[ v2 ++ ][k][j][i] = Vy;
+      if ( PrepVz   )   Array3D[ v2 ++ ][k][j][i] = Vz;      
       if ( PrepPres )   Array3D[ v2 ++ ][k][j][i] = Hydro_Con2Pres( BVal[DENS], BVal[MOMX], BVal[MOMY],
                                                                     BVal[MOMZ], BVal[ENGY], BVal+NCOMP_FLUID,
                                                                     CheckMinPres_Yes, MIN_PRES, Emag,
