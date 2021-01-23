@@ -1,14 +1,12 @@
 #include "GAMER.h"
 
 // declare as static so that other functions cannot invoke it directly and must use the function pointer
-static void BC_User_Template( real Array[], const int ArraySize[], real fluid[], const int NVar_Flu, 
-			      const int GhostSize, const int idx[], const double pos[], const double Time, 
-			      const int lv, const int TFluVarIdxList[], double AuxArray[] );
+static void BC_User_Template( real fluid[], const double x, const double y, const double z, const double Time,
+                              const int lv, double AuxArray[] );
 
 // this function pointer must be set by a test problem initializer
-void (*BC_User_Ptr)( real Array[], const int ArraySize[], real fluid[], const int NVar_Flu,
-		     const int GhostSize, const int idx[], const double pos[], const double Time,
-		     const int lv, const int TFluVarIdxList[], double AuxArray[] ) = NULL;
+void (*BC_User_Ptr)( real fluid[], const double x, const double y, const double z, const double Time,
+                     const int lv, double AuxArray[] ) = NULL;
 
 #ifdef MHD
 extern void (*BC_BField_User_Ptr)( real magnetic[], const double x, const double y, const double z, const double Time,
@@ -38,9 +36,8 @@ extern void (*BC_BField_User_Ptr)( real magnetic[], const double x, const double
 //
 // Return      :  fluid
 //-------------------------------------------------------------------------------------------------------
-void BC_User_Template( real Array[], const int ArraySize[], real fluid[], const int NVar_Flu,
-		       const int GhostSize, const int idx[], const double pos[], const double Time,
-		       const int lv, const int TFluVarIdxList[], double AuxArray[] )
+void BC_User_Template( real fluid[], const double x, const double y, const double z, const double Time,
+                       const int lv, double AuxArray[] )
 {
 
 // put your B.C. here
@@ -115,10 +112,10 @@ void BC_User_Template( real Array[], const int ArraySize[], real fluid[], const 
 //
 // Return      :  Array
 //-------------------------------------------------------------------------------------------------------
-void Flu_BoundaryCondition_User( real *Array, const int NVar_Flu, const int GhostSize, const int ArraySizeX,
-                                 const int ArraySizeY, const int ArraySizeZ, const int Idx_Start[],
-                                 const int Idx_End[], const int TFluVarIdxList[], const double Time,
-                                 const double dh, const double *Corner, const long TVar, const int lv )
+void Flu_BoundaryCondition_User( real *Array, const int NVar_Flu, const int ArraySizeX, const int ArraySizeY,
+                                 const int ArraySizeZ, const int Idx_Start[], const int Idx_End[],
+                                 const int TFluVarIdxList[], const double Time, const double dh, const double *Corner,
+                                 const long TVar, const int lv )
 {
 
 // check
@@ -138,9 +135,6 @@ void Flu_BoundaryCondition_User( real *Array, const int NVar_Flu, const int Ghos
 #  if   ( MODEL == HYDRO )
 #  ifdef MHD
    const double dh_2             = 0.5*dh;
-#  endif
-#  ifdef SRHD
-   real HTilde, Factor;
 #  endif
    const bool   CheckMinPres_Yes = true;
    const bool   PrepVx           = ( TVar & _VELX ) ? true : false;
@@ -172,11 +166,7 @@ void Flu_BoundaryCondition_User( real *Array, const int NVar_Flu, const int Ghos
    {
 //    1. primary variables
 //    get the boundary values of all NCOMP_TOTAL fields
-      const int ArraySize[3] = { ArraySizeX, ArraySizeY, ArraySizeZ };
-      const int idx[3] = { i, j, k };
-      const double pos[3] = { x, y, z };
-      BC_User_Ptr( Array, ArraySize, BVal, NVar_Flu, GhostSize, idx, pos,
-                   Time, lv, TFluVarIdxList, NULL );
+      BC_User_Ptr( BVal, x, y, z, Time, lv, NULL );
 
 //    add the magnetic energy for MHD
 #     if ( MODEL == HYDRO )
@@ -210,22 +200,9 @@ void Flu_BoundaryCondition_User( real *Array, const int NVar_Flu, const int Ghos
       v2 = NVar_Flu;
 
 #     if   ( MODEL == HYDRO )
-      real Vx, Vy, Vz;
-#     ifdef SRHD
-      HTilde = SRHD_Con2HTilde( BVal, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, 
-				EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table );
-      Factor = BVal[DENS]*((real)1.0 + HTilde);
-      Vx = BVal[MOMX] / Factor;
-      Vy = BVal[MOMY] / Factor;
-      Vz = BVal[MOMZ] / Factor;
-#     else
-      Vx = BVal[MOMX] / BVal[DENS];
-      Vy = BVal[MOMY] / BVal[DENS];
-      Vz = BVal[MOMZ] / BVal[DENS];
-#     endif
-      if ( PrepVx   )   Array3D[ v2 ++ ][k][j][i] = Vx;
-      if ( PrepVy   )   Array3D[ v2 ++ ][k][j][i] = Vy;
-      if ( PrepVz   )   Array3D[ v2 ++ ][k][j][i] = Vz;      
+      //if ( PrepVx   )   Array3D[ v2 ++ ][k][j][i] = BVal[MOMX] / BVal[DENS];
+      //if ( PrepVy   )   Array3D[ v2 ++ ][k][j][i] = BVal[MOMY] / BVal[DENS];
+      //if ( PrepVz   )   Array3D[ v2 ++ ][k][j][i] = BVal[MOMZ] / BVal[DENS];
       if ( PrepPres )   Array3D[ v2 ++ ][k][j][i] = Hydro_Con2Pres( BVal[DENS], BVal[MOMX], BVal[MOMY],
                                                                     BVal[MOMZ], BVal[ENGY], BVal+NCOMP_FLUID,
                                                                     CheckMinPres_Yes, MIN_PRES, Emag,

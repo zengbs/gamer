@@ -28,7 +28,7 @@ static double   Jet_Position;            // position of jet
 static double   Jet_Lobe_Ratio;          // ratio of jet/lobe densities
 static double   Jet_Center[2];           // jet central coordinates
 static double   Jet_Density;             // jet density
-static double   Jet_Gamma;               // jet relativistic gamma
+//static double   Jet_Gamma;               // jet relativistic gamma
 
 // =======================================================================================
 
@@ -128,7 +128,7 @@ void SetParameter()
 
    delete ReadPara;
 
-   Jet_Gamma = 1.0 / sqrt(1.0-SQR(Jet_Velocity));
+   //Jet_Gamma = 1.0 / sqrt(1.0-SQR(Jet_Velocity));
 
 // (1-2) convert to code unit
    Jet_Velocity *= Const_c   / UNIT_V;
@@ -218,11 +218,12 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
 // variables for jet
    real PriReal[NCOMP_FLUID];
 
-   if ( x < ICM_Position + ICM_Tangent*(y-0.5*amr->BoxSize[1]) ) {
-       PriReal[0] = (real)ICM_Density;
-   } else {
-       PriReal[0] = (real)Lobe_Density;
-   }
+   //if ( x < ICM_Position + ICM_Tangent*(y-0.5*amr->BoxSize[1]) ) {
+   //    PriReal[0] = (real)ICM_Density;
+   //} else {
+   //    PriReal[0] = (real)Lobe_Density;
+   //}
+   PriReal[0] = (real)ICM_Density;
    PriReal[1] = 0.0;
    PriReal[2] = 0.0;
    PriReal[3] = 0.0;
@@ -250,40 +251,36 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
 //
 // Return      :  fluid
 //-------------------------------------------------------------------------------------------------------
-void BC( real Array[], const int ArraySize[], real fluid[], const int NVar_Flu,
-	 const int GhostSize, const int idx[], const double pos[], const double Time,
-	 const int lv, const int TFluVarIdxList[], double AuxArray[] )
+void BC( real fluid[], const double x, const double y, const double z, const double Time,
+         const int lv, double AuxArray[] )
 {
 
-    real PriReal[NCOMP_FLUID];
+    real Pri[NCOMP_FLUID];
 
-    const int j_ref = GhostSize;  // reference j index
-
-    double rad = sqrt( SQR(pos[0]-Jet_Center[0]) + SQR(pos[2]-Jet_Center[1]) );
-
-    // 1D array -> 3D array
-    real (*Array3D)[ArraySize[2]][ArraySize[1]][ArraySize[0]] = ( real (*)[ArraySize[2]][ArraySize[1]][ArraySize[0]] )Array;
+    double rad = sqrt( SQR(x-Jet_Center[0]) + SQR(z-Jet_Center[1]) );
 
     if ( Jet_Fire && rad <= Jet_Radius )
     {
-
         // set fluid variable inside source
+        Pri[0] = (real)Jet_Density;
+        Pri[1] = 0.0;
+        Pri[2] = (real)Jet_Velocity;
+        Pri[3] = 0.0;
+        Pri[4] = (real)Amb_Pressure;
 
-        PriReal[0] = (real)Jet_Density;
-        PriReal[1] = 0.0;
-        PriReal[2] = (real)(Jet_Gamma*Jet_Velocity);
-        PriReal[3] = 0.0;
-        PriReal[4] = (real)Amb_Pressure;
-
-	Hydro_Pri2Con( PriReal, fluid, NULL_BOOL, NULL_INT, NULL, EoS_DensPres2Eint_CPUPtr,
-		       EoS_Temp2HTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr,
-		       EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table, NULL );
     } else {
 
-        for (int v=0; v<NVar_Flu; v++)
-            fluid[ TFluVarIdxList[v] ] = Array3D[v][idx[2]][j_ref][idx[0]];
-
+        Pri[0] = (real)ICM_Density;
+        Pri[1] = 0.0;
+        Pri[2] = 0.0;
+        Pri[3] = 0.0;
+        Pri[4] = (real)Amb_Pressure;
+    
     }
+
+    Hydro_Pri2Con( Pri, fluid, NULL_BOOL, NULL_INT, NULL, EoS_DensPres2Eint_CPUPtr,
+    	           EoS_Temp2HTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr,
+    	           EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table, NULL );
 
 } // FUNCTION : BC
 
