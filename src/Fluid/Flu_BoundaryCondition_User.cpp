@@ -139,9 +139,6 @@ void Flu_BoundaryCondition_User( real *Array, const int NVar_Flu, const int Ghos
 #  ifdef MHD
    const double dh_2             = 0.5*dh;
 #  endif
-#  ifdef SRHD
-   real HTilde, Factor;
-#  endif
    const bool   CheckMinPres_Yes = true;
 #  ifdef SRHD
    const bool   PrepLrtz         = ( TVar   & _LORENTZ_FACTOR ) ? true : false; // Lorentz factor
