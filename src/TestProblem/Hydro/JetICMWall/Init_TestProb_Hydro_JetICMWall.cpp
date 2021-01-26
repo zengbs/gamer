@@ -266,7 +266,7 @@ void BC( real Array[], const int ArraySize[], real BVal[], const int NVar_Flu,
      j = idx[1];
      k = idx[2];
 
-    real PriReal[NCOMP_FLUID], fluid[NCOMP_FLUID];
+    real PriReal[NCOMP_FLUID];
 
     const int j_ref = GhostSize;  // reference j index
 
@@ -285,7 +285,6 @@ void BC( real Array[], const int ArraySize[], real BVal[], const int NVar_Flu,
              PriReal[3] = 0.0;
              PriReal[4] = (real)Amb_Pressure;
 
-             for (int v=0;v<NCOMP_FLUID;v++) fluid[v] = Array3D[v][idx[2]][idx[1]][idx[0]];
 
              Hydro_Pri2Con( PriReal, BVal, NULL_BOOL, NULL_INT, NULL, EoS_DensPres2Eint_CPUPtr,
 	     	               EoS_Temp2HTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr,
