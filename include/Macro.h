@@ -32,7 +32,7 @@
 
 
 // models
-#define HYDRO        1
+#define HYDRO        5
 //#define MHD        2     // MHD is now regarded as an option of HYDRO
 #define ELBDM        3
 #define PAR_ONLY     4

@@ -33,7 +33,7 @@ static real Hydro_CheckMinPres( const real InPres, const real MinPres );
 GPU_DEVICE
 real SRHD_Con2HTilde( const real Con[], const EoS_GUESS_t EoS_GuessHTilde, const EoS_H2TEM_t EoS_HTilde2Temp,
                       const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
-                      const real *const EoS_Table[EOS_NTABLE_MAX] );
+                      const real *const EoS_Table[EOS_NTABLE_MAX], real *iter );
 
 GPU_DEVICE
 void SRHD_HTildeFunction (real HTilde, real MSqr_DSqr, real Temp, real Constant,
@@ -46,7 +46,7 @@ bool SRHD_CheckUnphysical( const real Con[], const real Pri[], const char s[], c
 #endif
 
 GPU_DEVICE
-void  NewtonRaphsonSolver(void (*FunPtr)(real, real, real, real, const EoS_H2TEM_t, real*, real*, const double*, const int*, const real *const*),
+real  NewtonRaphsonSolver(void (*FunPtr)(real, real, real, real, const EoS_H2TEM_t, real*, real*, const double*, const int*, const real *const*),
                           real MSqr_DSqr, real Constant, real *root, const EoS_H2TEM_t EoS_HTilde2Temp,
                           const real guess, const real epsabs, const real epsrel,
                           const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
@@ -220,7 +220,98 @@ void Hydro_Con2Pri( const real In[], real Out[], const real MinPres,
    real HTilde, Factor, Temp, AAA;
    real *LorentzFactor = &AAA;
    SRHD_CheckUnphysical( In, NULL, __FUNCTION__, __LINE__, true  );
-   HTilde = SRHD_Con2HTilde( In, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
+   HTilde = SRHD_Con2HTilde( In, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL );
+
+
+   Factor = In[0]*((real)1.0 + HTilde);
+
+   Out[1] = In[1]/Factor;
+   Out[2] = In[2]/Factor;
+   Out[3] = In[3]/Factor;
+
+   if ( LorentzFactor_Ptr != NULL )  LorentzFactor = LorentzFactor_Ptr;
+
+   *LorentzFactor = SQRT( (real)1.0 + SQR(Out[1]) + SQR(Out[2]) + SQR(Out[3]) );
+
+   Out[0] = In[0]/ *LorentzFactor;
+
+   EoS_HTilde2Temp( HTilde, &Temp, NULL, NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
+   Out[4] = Out[0]*Temp;
+#  else
+   Out[0] = In[0];
+   Out[1] = In[1]*_Rho;
+   Out[2] = In[2]*_Rho;
+   Out[3] = In[3]*_Rho;
+   Out[4] = Hydro_Con2Pres( In[0], In[1], In[2], In[3], In[4], In+NCOMP_FLUID, CheckMinPres_Yes, MinPres, Emag,
+                            EoS_DensEint2Pres, NULL, NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, EintOut );
+
+
+// pressure floor required to resolve the Jeans length
+// --> note that currently we do not modify the dual-energy variable (e.g., entropy) accordingly
+   if ( JeansMinPres )
+   {
+      const real Pres0 = Out[4];
+      Out[4] = Hydro_CheckMinPres( Pres0, JeansMinPres_Coeff*SQR(Out[0]) );
+
+//    recompute internal energy to be consistent with the updated pressure
+      if ( EintOut != NULL  &&  Out[4] != Pres0 )
+         *EintOut = EoS_DensPres2Eint( Out[0], Out[4], In+NCOMP_FLUID, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
+   }
+
+#  endif
+
+// passive scalars
+#  if ( NCOMP_PASSIVE > 0 )
+// copy all passive scalars
+   for (int v=NCOMP_FLUID; v<NCOMP_TOTAL; v++)  Out[v] = In[v];
+
+// convert the mass density of target passive scalars to mass fraction
+   if ( NormPassive )
+      for (int v=0; v<NNorm; v++)   Out[ NCOMP_FLUID + NormIdx[v] ] *= _Rho;
+#  endif
+
+
+// B field
+#  ifdef MHD
+   for (int v=NCOMP_TOTAL; v<NCOMP_TOTAL_PLUS_MAG; v++)  Out[v] = In[v];
+#  endif
+
+} // FUNCTION : Hydro_Con2Pri
+
+GPU_DEVICE
+void Hydro_Con2Pri_Itr( const real In[], real Out[], const real MinPres,
+                        const bool NormPassive, const int NNorm, const int NormIdx[],
+                        const bool JeansMinPres, const real JeansMinPres_Coeff,
+                        const EoS_DE2P_t EoS_DensEint2Pres, const EoS_DP2E_t EoS_DensPres2Eint,
+                        const EoS_GUESS_t EoS_GuessHTilde, const EoS_H2TEM_t EoS_HTilde2Temp,
+                        const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
+                        const real *const EoS_Table[EOS_NTABLE_MAX], real* const EintOut, real* LorentzFactor_Ptr, real *itr )
+{
+
+#  ifndef SRHD
+   const bool CheckMinPres_Yes = true;
+   const real _Rho             = (real)1.0/In[0];
+#  endif
+
+#  if( !defined SRHD && !defined MHD )
+   const real Emag             = NULL_REAL;
+#  endif
+
+#  ifdef MHD
+   const real Bx               = In[ MAG_OFFSET + 0 ];
+   const real By               = In[ MAG_OFFSET + 1 ];
+   const real Bz               = In[ MAG_OFFSET + 2 ];
+   const real Emag             = (real)0.5*( SQR(Bx) + SQR(By) + SQR(Bz) );
+#  else
+
+#  endif
+
+// conserved --> primitive
+#  ifdef SRHD
+   real HTilde, Factor, Temp, AAA;
+   real *LorentzFactor = &AAA;
+   SRHD_CheckUnphysical( In, NULL, __FUNCTION__, __LINE__, true  );
+   HTilde = SRHD_Con2HTilde( In, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, itr );
 
 
    Factor = In[0]*((real)1.0 + HTilde);
@@ -514,7 +605,7 @@ void Hydro_Con2Flux( const int XYZ, real Flux[], const real In[], const real Min
 GPU_DEVICE
 real SRHD_Con2HTilde( const real Con[], const EoS_GUESS_t EoS_GuessHTilde, const EoS_H2TEM_t EoS_HTilde2Temp,
                       const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
-                      const real *const EoS_Table[EOS_NTABLE_MAX] )
+                      const real *const EoS_Table[EOS_NTABLE_MAX], real *iter )
 {
   real HTilde, GuessHTilde, MSqr_DSqr, Constant;
 
@@ -528,9 +619,13 @@ real SRHD_Con2HTilde( const real Con[], const EoS_GUESS_t EoS_GuessHTilde, const
                   const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
                   const real *const EoS_Table[EOS_NTABLE_MAX] ) = &SRHD_HTildeFunction;
 
-  NewtonRaphsonSolver(FunPtr, MSqr_DSqr, -Constant, &HTilde, EoS_HTilde2Temp, GuessHTilde,
-                      (real)TINY_NUMBER, (real)MACHINE_EPSILON, EoS_AuxArray_Flt,
-                      EoS_AuxArray_Int, EoS_Table );
+
+  real iter2;
+       iter2 = NewtonRaphsonSolver(FunPtr, MSqr_DSqr, -Constant, &HTilde, EoS_HTilde2Temp, GuessHTilde,
+                                   (real)TINY_NUMBER, (real)MACHINE_EPSILON, EoS_AuxArray_Flt,
+                                   EoS_AuxArray_Int, EoS_Table );
+
+  if ( iter != NULL ) iter = &iter2;
 
   return HTilde;
 }
@@ -583,7 +678,7 @@ real SRHD_Con2KineticEngy( real Con[], const EoS_GUESS_t EoS_GuessHTilde, const 
 {
   real H, Usqr, Pri[NCOMP_FLUID], LorentzFactor;
 
-  H = (real)1.0 + SRHD_Con2HTilde( Con, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
+  H = (real)1.0 + SRHD_Con2HTilde( Con, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL );
 
   Hydro_Con2Pri( Con, Pri, NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL, NULL_REAL, NULL, NULL,
                  EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL, &LorentzFactor );
@@ -1079,6 +1174,34 @@ real Hydro_Con2Temp( const real Dens, const real MomX, const real MomY, const re
 } // FUNCTION : Hydro_Con2Temp
 
 
+GPU_DEVICE
+real Hydro_Con2Temp_Itr( const real Dens, const real MomX, const real MomY, const real MomZ, const real Engy,
+                         const real Passive[], const bool CheckMinPres, const real MinPres, const real Emag,
+                         const EoS_DE2P_t EoS_DensEint2Pres, const EoS_GUESS_t EoS_GuessHTilde,
+                         const EoS_H2TEM_t EoS_HTilde2Temp, const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
+                         const real *const EoS_Table[EOS_NTABLE_MAX] )
+{
+
+#  ifdef SRHD
+   real Cons[NCOMP_FLUID] =  {Dens, MomX, MomY, MomZ, Engy};
+   real Prim[NCOMP_FLUID];
+
+   real AA = 2.0;
+   real *itr = &AA;
+
+   Hydro_Con2Pri_Itr( Cons, Prim, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL,
+                      (real)NULL_REAL, NULL, NULL, EoS_GuessHTilde,
+                      EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL, NULL, itr );
+#  else
+   const real Pres = Hydro_Con2Pres( Dens, MomX, MomY, MomZ, Engy, Passive, CheckMinPres, MinPres, Emag,
+                                     EoS_DensEint2Pres, NULL, NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL );
+
+#  endif
+
+   return *itr;
+
+} // FUNCTION : Hydro_Con2Temp
+
 
 
 
@@ -1211,7 +1334,7 @@ real MHD_GetCellCenteredBEnergy( const real Bx_FC[], const real By_FC[], const r
 // Parameter   :  
 //-------------------------------------------------------------------------------------------------------
 GPU_DEVICE
-void  NewtonRaphsonSolver(void (*FunPtr)(real, real, real, real, const EoS_H2TEM_t, real*, real*, const double*, const int*, const real *const*), 
+real  NewtonRaphsonSolver(void (*FunPtr)(real, real, real, real, const EoS_H2TEM_t, real*, real*, const double*, const int*, const real *const*), 
                           real MSqr_DSqr, real Constant, real *root, const EoS_H2TEM_t EoS_HTilde2Temp, 
                           const real guess, const real epsabs, const real epsrel,
                           const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
@@ -1248,6 +1371,7 @@ void  NewtonRaphsonSolver(void (*FunPtr)(real, real, real, real, const EoS_H2TEM
 
    }while ( fabs(delta) >= tolerance && iter < max_iter );
 
+ return (real)iter;
 }
 
 

@@ -14,7 +14,11 @@ static void GetCompound_Makefile ( hid_t &H5_TypeID );
 static void GetCompound_SymConst ( hid_t &H5_TypeID );
 static void GetCompound_InputPara( hid_t &H5_TypeID );
 
-
+real Hydro_Con2Temp_Itr( const real Dens, const real MomX, const real MomY, const real MomZ, const real Engy,
+                         const real Passive[], const bool CheckMinPres, const real MinPres, const real Emag,
+                         const EoS_DE2P_t EoS_DensEint2Pres, const EoS_GUESS_t EoS_GuessHTilde,
+                         const EoS_H2TEM_t EoS_HTilde2Temp, const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
+                         const real *const EoS_Table[EOS_NTABLE_MAX] );
 
 /*======================================================================================================
 Data structure:
@@ -1060,10 +1064,10 @@ void Output_DumpData_Total_HDF5( const char *FileName )
 #                 ifdef CHECK_FAILED_CELL_IN_FLUID
 	              if(SRHD_CheckUnphysical(Cons, NULL, __FUNCTION__, __LINE__, true)) exit(EXIT_FAILURE);
 #                 endif
-                  Temp[PID][i][j][k] =  Hydro_Con2Temp( Cons[0], Cons[1], Cons[2], Cons[3], Cons[4], 
-                                                        NULL, NULL_BOOL, NULL_REAL, NULL_REAL, NULL,
-                                                        EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr,
-                                                        EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table );
+                  Temp[PID][i][j][k] =  Hydro_Con2Temp_Itr( Cons[0], Cons[1], Cons[2], Cons[3], Cons[4], 
+                                                            NULL, NULL_BOOL, NULL_REAL, NULL_REAL, NULL,
+                                                            EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr,
+                                                            EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table );
                }
 
 //             copy conserved data and temperature into FieldData

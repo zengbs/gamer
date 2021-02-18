@@ -534,7 +534,7 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
    {
       double Pot, Rho, PotCenter_x, PotCenter_y, PotCenter_z;
       double Rho0, MolecularWeightPerElectron, PotCenter;
-
+#     ifdef GRAVITY
       PotCenter_x = ExtPot_AuxArray_Flt[0];
       PotCenter_y = ExtPot_AuxArray_Flt[1];
       PotCenter_z = ExtPot_AuxArray_Flt[2];
@@ -570,6 +570,7 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
           printf( "Pot=%e, PotCenter=%e, MilkyWay_Temperature=%e, Rho0=%e\n", Pot, PotCenter, MilkyWay_Temperature, Rho0);
           exit(0);
       }
+#     endif
    }
 
    Hydro_Pri2Con( Pri, fluid, NULL_BOOL, NULL_INT, NULL, EoS_DensPres2Eint_CPUPtr,
@@ -887,7 +888,9 @@ void Init_TestProb_Hydro_Jets()
    Output_User_Ptr          = NULL;
    Aux_Record_User_Ptr      = NULL;
    End_User_Ptr             = NULL;
+#  ifdef GRAVITY
    Init_ExtPot_Ptr          = Init_ExtPot_MilkyWay;
+#  endif
 
 
    if ( MPI_Rank == 0 )    Aux_Message( stdout, "%s ... done\n", __FUNCTION__ );

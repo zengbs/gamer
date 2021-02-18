@@ -122,7 +122,7 @@ void Hydro_NormalizePassive( const real GasDens, real Passive[], const int NNorm
 #ifdef SRHD
 real SRHD_Con2HTilde( const real Con[], const EoS_GUESS_t EoS_GuessHTilde, const EoS_H2TEM_t EoS_HTilde2Temp,
                       const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
-                      const real *const EoS_Table[EOS_NTABLE_MAX] );
+                      const real *const EoS_Table[EOS_NTABLE_MAX], real *iter );
 void SRHD_HTildeFunction (real HTilde, real MSqr_DSqr, real Temp, real Constant,
                           const EoS_H2TEM_t EoS_HTilde2Temp, real *Fun, real *DiffFun,
                           const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
