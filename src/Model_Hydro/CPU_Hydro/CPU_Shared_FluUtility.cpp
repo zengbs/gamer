@@ -625,7 +625,7 @@ real SRHD_Con2HTilde( const real Con[], const EoS_GUESS_t EoS_GuessHTilde, const
                                    (real)TINY_NUMBER, (real)MACHINE_EPSILON, EoS_AuxArray_Flt,
                                    EoS_AuxArray_Int, EoS_Table );
 
-  if ( iter != NULL ) iter = &iter2;
+  if ( iter != NULL ) *iter = iter2;
 
   return HTilde;
 }
