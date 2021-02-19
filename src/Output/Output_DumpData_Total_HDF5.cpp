@@ -14,7 +14,7 @@ static void GetCompound_Makefile ( hid_t &H5_TypeID );
 static void GetCompound_SymConst ( hid_t &H5_TypeID );
 static void GetCompound_InputPara( hid_t &H5_TypeID );
 
-real Hydro_Con2Temp_Itr( const real Dens, const real MomX, const real MomY, const real MomZ, const real Engy,
+int Hydro_Con2Temp_Itr( const real Dens, const real MomX, const real MomY, const real MomZ, const real Engy,
                          const real Passive[], const bool CheckMinPres, const real MinPres, const real Emag,
                          const EoS_DE2P_t EoS_DensEint2Pres, const EoS_GUESS_t EoS_GuessHTilde,
                          const EoS_H2TEM_t EoS_HTilde2Temp, const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
@@ -739,16 +739,18 @@ void Output_DumpData_Total_HDF5( const char *FileName )
 
 // 5. output the simulation grid data (density, momentum, ... etc)
    const int FieldSizeOnePatch = sizeof(real)*CUBE(PS1);
+   const int FieldSizeOnePatch_Itr = sizeof(int)*CUBE(PS1);
    int  NFieldOut;
    char (*FieldName)[MAX_STRING]     = NULL;
    real (*FieldData)[PS1][PS1][PS1]  = NULL;
+   int  (*FieldData_Itr)[PS1][PS1][PS1]  = NULL;
 #  ifdef SRHD
    real (*Dens) [PS1][PS1][PS1]      = NULL;
    real (*MomX) [PS1][PS1][PS1]      = NULL;
    real (*MomY) [PS1][PS1][PS1]      = NULL;
    real (*MomZ) [PS1][PS1][PS1]      = NULL;
    real (*Engy) [PS1][PS1][PS1]      = NULL;
-   real (*Temp) [PS1][PS1][PS1]      = NULL;
+   int  (*Temp) [PS1][PS1][PS1]      = NULL;
    real Cons[NCOMP_FLUID];
 #  endif
 
@@ -954,13 +956,14 @@ void Output_DumpData_Total_HDF5( const char *FileName )
 
 //          output one field at one level in one rank at a time
             FieldData = new real [ amr->NPatchComma[lv][1] ][PS1][PS1][PS1];
+            FieldData_Itr = new int [ amr->NPatchComma[lv][1] ][PS1][PS1][PS1];
 #           ifdef SRHD
             Dens      = new real [ amr->NPatchComma[lv][1] ][PS1][PS1][PS1];
             MomX      = new real [ amr->NPatchComma[lv][1] ][PS1][PS1][PS1];
             MomY      = new real [ amr->NPatchComma[lv][1] ][PS1][PS1][PS1];
             MomZ      = new real [ amr->NPatchComma[lv][1] ][PS1][PS1][PS1];
             Engy      = new real [ amr->NPatchComma[lv][1] ][PS1][PS1][PS1];
-            Temp      = new real [ amr->NPatchComma[lv][1] ][PS1][PS1][PS1];
+            Temp      = new int [ amr->NPatchComma[lv][1] ][PS1][PS1][PS1];
 #           endif
 
             for (int v=0; v<NFieldOut; v++)
@@ -1097,7 +1100,7 @@ void Output_DumpData_Total_HDF5( const char *FileName )
 	                    break;
 	                  case 5:
 	                     for ( int PID=0;PID < amr->NPatchComma[lv][1];PID++)
-	                           memcpy( FieldData[PID], Temp[PID], FieldSizeOnePatch );
+	                           memcpy( FieldData_Itr[PID], Temp[PID], FieldSizeOnePatch_Itr );
 	                    break;
 #                     ifdef GRAVITY
                       case 6:
@@ -1111,18 +1114,32 @@ void Output_DumpData_Total_HDF5( const char *FileName )
                    }
 #              endif
 
-//             5-3-1-4. write data to disk
-               H5_SetID_Field = H5Dopen( H5_GroupID_GridData, FieldName[v], H5P_DEFAULT );
+               if (v <5)
+               {
+//               5-3-1-4. write data to disk
+                 H5_SetID_Field = H5Dopen( H5_GroupID_GridData, FieldName[v], H5P_DEFAULT );
 
-               H5_Status = H5Dwrite( H5_SetID_Field, H5T_GAMER_REAL, H5_MemID_Field, H5_SpaceID_Field, H5P_DEFAULT, FieldData );
-               if ( H5_Status < 0 )   Aux_Error( ERROR_INFO, "failed to write a field (lv %d, v %d) !!\n", lv, v );
+                 H5_Status = H5Dwrite( H5_SetID_Field, H5T_GAMER_REAL, H5_MemID_Field, H5_SpaceID_Field, H5P_DEFAULT, FieldData );
+                 if ( H5_Status < 0 )   Aux_Error( ERROR_INFO, "failed to write a field (lv %d, v %d) !!\n", lv, v );
 
-               H5_Status = H5Dclose( H5_SetID_Field );
+                 H5_Status = H5Dclose( H5_SetID_Field );
+               }
+               else
+               {
+//               5-3-1-4. write data to disk
+                 H5_SetID_Field = H5Dopen( H5_GroupID_GridData, FieldName[v], H5P_DEFAULT );
+
+                 H5_Status = H5Dwrite( H5_SetID_Field, H5T_NATIVE_INT, H5_MemID_Field, H5_SpaceID_Field, H5P_DEFAULT, FieldData_Itr );
+                 if ( H5_Status < 0 )   Aux_Error( ERROR_INFO, "failed to write a field (lv %d, v %d) !!\n", lv, v );
+
+                 H5_Status = H5Dclose( H5_SetID_Field );
+               }
             } // for (int v=0; v<NFieldOut; v++)
 
 
 //          5-3-1-5.free resource before dumping magnetic field to save memory
             delete [] FieldData;
+            delete [] FieldData_Itr;
 #           ifdef SRHD
             delete [] Dens;
             delete [] MomX;
