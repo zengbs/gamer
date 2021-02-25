@@ -3,18 +3,17 @@
 
 # problem-specific runtime parameters
 Jet_Ambient                                       0         # [0/1]: uniform/Milky-Way/from-file
-Jet_Exhaust                                       3         # [0/1/2/3]: no jet/jet1/jet2/bi-polar jet
+Jet_Fire                                          3         # [0/1/2/3]: no jet/jet1/jet2/bi-polar jet
 Jet_Precession                                    0         # [0/1]: precession
 Jet_TimeDependentSrc                              0         # [0/1]: time-dependent source
 
 
 # jet fluid parameters
-Jet_SrcVel                                       10         # jet: jet 4-velocity ( in unit of speed of light )
+Jet_SrcVel                                        2         # jet: jet 4-velocity ( in unit of speed of light )
 Jet_SmoothVel                                     1         # [0/1]: smooth velocity
-Jet_SrcDens                                 5.0e-31         # jet: jet density (in cgs units)
+Jet_SrcDens                                 5.0e-30         # jet: jet density (in cgs units)
 Jet_SrcTemp                                     1.0         # jet: jet temperature (in K)
-AtomicMassUnitSrc                           1.6e-24         # atomic mass unit in source
-AtomicMassUnitAmbient                       1.6e-24         # atomic mass unit in background
+ParticleMass                                1.6e-24         # particle mass (g)
 
 
 # source geometry parameters
@@ -43,7 +42,7 @@ Amb_UniformVel_z                               +0.0         # ambient velocity z
 
 # estimate default evolution time (i.e. END_T)
 Amb_FluSphereRadius                              -1         # radius of sphere
-CharacteristicSpeed                              -1         # the characteristic speed of the simulation problem
+CharacteristicSpeed                              0.7         # the characteristic speed of the simulation problem
                                                             # the default end-time (END_T) will be estimated from
                                                             # `CharacteristicSpeed` and `BOX_SIZE`
                                                             # The unit of `CharacteristicSpeed` is UNIT_V
