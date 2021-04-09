@@ -1,7 +1,8 @@
 # Mac
 .DS_Store
-
+*.bin
 *.o
-
+log
+a.out
 bin/**
 gamer
