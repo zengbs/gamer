@@ -4,5 +4,6 @@
 *.o
 log
 a.out
+.*.swp
 bin/**
 gamer

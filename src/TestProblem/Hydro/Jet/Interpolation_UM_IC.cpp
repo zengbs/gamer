@@ -162,14 +162,10 @@ double TrilinearInterpolation(double *FieldAtVertices, double *xyz000, double *d
   return c;
 }
 
-
-double Interpolation_UM_IC( char *FileName, double x, double y, double z )
+void ReadBinFile( char *FileName, double **buffer)
 {
-
-
   FILE *pFile;
   long lSize;
-  double *buffer;
   size_t result;
 
   pFile = fopen ( FileName , "rb" );
@@ -181,24 +177,29 @@ double Interpolation_UM_IC( char *FileName, double x, double y, double z )
   rewind (pFile);
 
   // allocate memory to contain the whole file:
-  buffer = (double*) calloc (lSize,sizeof(double));
-  if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
+  *buffer = (double*) calloc (lSize,sizeof(double));
+  if (*buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
 
-  // copy the file into the buffer:
-  result = fread (buffer,1,lSize,pFile);
+  // copy the file into the *buffer:
+  result = fread (*buffer,1,lSize,pFile);
   if (result != lSize) {fputs ("Reading error",stderr); exit (3);}
 
-  int HeaderSize = (int)buffer[0];
-  printf("HeaderSize=%d\n", HeaderSize);
-  int Nx = (int)buffer[1];
-  int Ny = (int)buffer[2];
-  int Nz = (int)buffer[3];
+  fclose (pFile);
+}
+
+//double Interpolation_UM_IC( char *FileName, double x, double y, double z )
+double Interpolation_UM_IC( double **buffer, double x, double y, double z )
+{
+  int HeaderSize = (int)(*buffer)[0];
+  int Nx = (int)(*buffer)[1];
+  int Ny = (int)(*buffer)[2];
+  int Nz = (int)(*buffer)[3];
 
   if (5*Nx*Ny*Nz > INT_MAX) {printf("integer overflow!!\n"); exit(0);}
 
-  double dx = buffer[4];
-  double dy = buffer[5];
-  double dz = buffer[6];
+  double dx = (*buffer)[4];
+  double dy = (*buffer)[5];
+  double dz = (*buffer)[6];
   if ( x<0 || x>Nx*dx ) {printf("x is soutside box!\n"); exit(0);}
   if ( y<0 || y>Ny*dy ) {printf("y is soutside box!\n"); exit(0);}
   if ( z<0 || z>Nz*dz ) {printf("z is soutside box!\n"); exit(0);}
@@ -206,16 +207,20 @@ double Interpolation_UM_IC( char *FileName, double x, double y, double z )
   double dxyz[3] = {dx, dy, dz};
  
   int ghostsize = 1;
- 
-  double ***Rhoo = (double***)calloc_3d_array((size_t)(Nx+2*ghostsize), (size_t)(Ny+2*ghostsize), (size_t)(Nz+2*ghostsize), sizeof(double));
-  double ***VelX = (double***)calloc_3d_array((size_t)(Nx+2*ghostsize), (size_t)(Ny+2*ghostsize), (size_t)(Nz+2*ghostsize), sizeof(double));
-  double ***VelY = (double***)calloc_3d_array((size_t)(Nx+2*ghostsize), (size_t)(Ny+2*ghostsize), (size_t)(Nz+2*ghostsize), sizeof(double));
-  double ***VelZ = (double***)calloc_3d_array((size_t)(Nx+2*ghostsize), (size_t)(Ny+2*ghostsize), (size_t)(Nz+2*ghostsize), sizeof(double));
-  double ***Pres = (double***)calloc_3d_array((size_t)(Nx+2*ghostsize), (size_t)(Ny+2*ghostsize), (size_t)(Nz+2*ghostsize), sizeof(double));
 
-  double *X = (double*)calloc((size_t)(Nx+2*ghostsize),sizeof(double));
-  double *Y = (double*)calloc((size_t)(Ny+2*ghostsize),sizeof(double));
-  double *Z = (double*)calloc((size_t)(Nz+2*ghostsize),sizeof(double));
+  int NX = Nx+2*ghostsize;
+  int NY = Ny+2*ghostsize;
+  int NZ = Nz+2*ghostsize;
+ 
+  double ***Rhoo = (double***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(double));
+  double ***VelX = (double***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(double));
+  double ***VelY = (double***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(double));
+  double ***VelZ = (double***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(double));
+  double ***Pres = (double***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(double));
+
+  double *X = (double*)calloc((size_t)NX,sizeof(double));
+  double *Y = (double*)calloc((size_t)NY,sizeof(double));
+  double *Z = (double*)calloc((size_t)NZ,sizeof(double));
 
 
   for (int i=-ghostsize;i<Nx+ghostsize;i++) X[i+ghostsize] = (0.5+(double)i)*dx;
@@ -223,9 +228,6 @@ double Interpolation_UM_IC( char *FileName, double x, double y, double z )
   for (int i=-ghostsize;i<Nz+ghostsize;i++) Z[i+ghostsize] = (0.5+(double)i)*dz;
   
 
-  int NX = Nx+2*ghostsize;
-  int NY = Ny+2*ghostsize;
-  int NZ = Nz+2*ghostsize;
 
 
   for (int c=0;c<5*NX*NY*NZ;c++){
@@ -237,11 +239,11 @@ double Interpolation_UM_IC( char *FileName, double x, double y, double z )
     j = ((cc - cc%NZ) / NZ) % NY;
     k = cc%NZ;
 
-    if (          0 <= c && c <   NX*NY*NZ ) Rhoo[i][j][k] = buffer[c+HeaderSize];
-    if (   NX*NY*NZ <= c && c < 2*NX*NY*NZ ) VelX[i][j][k] = buffer[c+HeaderSize];
-    if ( 2*NX*NY*NZ <= c && c < 3*NX*NY*NZ ) VelY[i][j][k] = buffer[c+HeaderSize];
-    if ( 3*NX*NY*NZ <= c && c < 4*NX*NY*NZ ) VelZ[i][j][k] = buffer[c+HeaderSize];
-    if ( 4*NX*NY*NZ <= c && c < 5*NX*NY*NZ ) Pres[i][j][k] = buffer[c+HeaderSize];
+    if (          0 <= c && c <   NX*NY*NZ ) Rhoo[i][j][k] = (*buffer)[c+HeaderSize];
+    if (   NX*NY*NZ <= c && c < 2*NX*NY*NZ ) VelX[i][j][k] = (*buffer)[c+HeaderSize];
+    if ( 2*NX*NY*NZ <= c && c < 3*NX*NY*NZ ) VelY[i][j][k] = (*buffer)[c+HeaderSize];
+    if ( 3*NX*NY*NZ <= c && c < 4*NX*NY*NZ ) VelZ[i][j][k] = (*buffer)[c+HeaderSize];
+    if ( 4*NX*NY*NZ <= c && c < 5*NX*NY*NZ ) Pres[i][j][k] = (*buffer)[c+HeaderSize];
   }
 
 
@@ -272,8 +274,6 @@ double Interpolation_UM_IC( char *FileName, double x, double y, double z )
   double InterpolatedField = TrilinearInterpolation(FieldAtVertices, xyz000, dxyz, xyz);
 
   // free memory
-  fclose (pFile);
-  free (buffer);
   free_3d_array(Rhoo);
   free_3d_array(VelX);
   free_3d_array(VelY);
@@ -292,8 +292,10 @@ int main()
   double y = 0.2; 
   double z = 0.3; 
   char FileName[] = "Fluid3D.bin";
+  double *buffer;
+  ReadBinFile(FileName, &buffer);
   double  FineField;
-  FineField = Interpolation_UM_IC( FileName, x, y, z );
+  FineField = Interpolation_UM_IC( &buffer, x, y, z );
 
   printf("FineField=%e\n", FineField);
 
