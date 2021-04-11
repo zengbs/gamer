@@ -1,9 +1,14 @@
 #include <random>
+#include <limits.h>
 #include "GAMER.h"
 #include "TestProb.h"
 
+void ***calloc_3d_array (size_t nt, size_t nr, size_t nc, size_t size);
 void Mis_Cartesian2Spherical( const double Cartesian[], double Spherical[] );
 void CartesianRotate( double x[], double theta, double phi, bool inverse );
+void Interpolation_UM_IC( real x, real y, real z, real *Pri );
+real TrilinearInterpolation(real *FieldAtVertices, real *xyz000, real *dxyz, real *xyz);
+void SetArray();
 
 #if ( MODEL == HYDRO )
 
@@ -41,6 +46,17 @@ static bool     Jet_SmoothVel;           // smooth radial component of 4-velocit
 static double   CharacteristicSpeed;     // the characteristic speed of the simulation problem
                                          // the default end-time (END_T) will be estimated from
                                          // `CharacteristicSpeed` and `BOX_SIZE`
+static real *buffer;
+static real *Header;
+static real ***Rhoo;
+static real ***VelX;
+static real ***VelY;
+static real ***VelZ;
+static real ***Pres;
+static real *X;
+static real *Y;
+static real *Z;
+
 
 void Init_ExtPot_IsothermalSlab(); 
 
@@ -213,12 +229,6 @@ void SetParameter()
 // load time-dependent source varibles
    ReadPara->Add( "Jet_BurstStartTime",      &Jet_BurstStartTime,      -1.0,          NoMin_double,   NoMax_double    );
    ReadPara->Add( "Jet_BurstEndTime",        &Jet_BurstEndTime,        -1.0,          NoMin_double,   NoMax_double    );
-   ReadPara->Add( "Jet_Burst4VelRatio",      &Jet_Burst4VelRatio,      -1.0,          NoMin_double,   NoMax_double    );
-   ReadPara->Add( "Jet_BurstDensRatio",      &Jet_BurstDensRatio,      -1.0,          NoMin_double,   NoMax_double    );
-   ReadPara->Add( "Jet_BurstTempRatio",      &Jet_BurstTempRatio,      -1.0,          NoMin_double,   NoMax_double    );
-   ReadPara->Add( "Flag_Burst4Vel",          &Flag_Burst4Vel,           false,        Useless_bool,   Useless_bool    );
-   ReadPara->Add( "Flag_BurstDens",          &Flag_BurstDens,           false,        Useless_bool,   Useless_bool    );
-   ReadPara->Add( "Flag_BurstTemp",          &Flag_BurstTemp,           false,        Useless_bool,   Useless_bool    );
 
    ReadPara->Read( FileName );
 
@@ -377,6 +387,7 @@ void SetParameter()
       PRINT_WARNING( "OUTPUT_DT", OUTPUT_DT, FORMAT_REAL );
    }
 
+   SetArray();
 
 // (4) make a note
    if ( MPI_Rank == 0 )
@@ -465,7 +476,157 @@ void SetParameter()
 } // FUNCTION : SetParameter
 
 
+void ReadBinFile( char *FileName, real **buffer)
+{
+  FILE *pFile;
+  long lSize;
+  size_t result;
 
+  pFile = fopen ( FileName , "rb" );
+  if (pFile==NULL) {fputs ("File error\n",stderr); exit (1);}
+
+  // obtain file size:
+  fseek (pFile , 0 , SEEK_END);
+  lSize = ftell (pFile);
+  rewind (pFile);
+
+  // allocate memory to contain the whole file:
+  *buffer = (real*) calloc (lSize,sizeof(double));
+  if (*buffer == NULL) {fputs ("Memory error\n",stderr); exit (2);}
+
+  // copy the file into the *buffer:
+  result = fread (*buffer,1,lSize,pFile);
+  if (result != lSize) {fputs ("Reading error\n",stderr); exit (3);}
+
+  fclose (pFile);
+}
+
+
+void SetArray()
+{
+// Reading table for interpolations in SetGridIC()
+   char TableFileName[] = "UM_IC";
+   ReadBinFile(TableFileName, &buffer);
+
+   int HeaderSize = (int)buffer[0];
+
+   Header = (real*)malloc((size_t)HeaderSize*sizeof(real));
+
+   memcpy(Header, buffer, (size_t)HeaderSize*sizeof(real));
+
+   int Nx = (int)Header[1];
+   int Ny = (int)Header[2];
+   int Nz = (int)Header[3];
+
+   if (5*Nx*Ny*Nz > INT_MAX) {printf("integer overflow!!\n"); exit(0);}
+
+   real Lx = Header[4];
+   real Ly = Header[5];
+   real Lz = Header[6];
+   int numGhost = (int)Header[7];
+
+   real dx = Lx/(real)Nx;
+   real dy = Lx/(real)Nx;
+   real dz = Lx/(real)Nx;
+
+   int NX = Nx+2*numGhost;
+   int NY = Ny+2*numGhost;
+   int NZ = Nz+2*numGhost;
+
+   Rhoo = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
+   VelX = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
+   VelY = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
+   VelZ = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
+   Pres = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
+
+   X = (real*)calloc((size_t)NX,sizeof(real));
+   Y = (real*)calloc((size_t)NY,sizeof(real));
+   Z = (real*)calloc((size_t)NZ,sizeof(real));
+
+
+   for (int i=-numGhost;i<Nx+numGhost;i++) X[i+numGhost] = (0.5+(real)i)*dx;
+   for (int i=-numGhost;i<Ny+numGhost;i++) Y[i+numGhost] = (0.5+(real)i)*dy;
+   for (int i=-numGhost;i<Nz+numGhost;i++) Z[i+numGhost] = (0.5+(real)i)*dz;
+  
+   for (int c=0;c<5*NX*NY*NZ;c++){
+     int i, j, k, cc;
+     int ii, jj, kk;
+
+     cc = c%(NX*NY*NZ);
+     i = (cc - cc%(NY*NZ)) / (NY*NZ);
+     j = ((cc - cc%NZ) / NZ) % NY;
+     k = cc%NZ;
+
+     if (          0 <= c && c <   NX*NY*NZ ) Rhoo[i][j][k] = buffer[c+HeaderSize];
+     if (   NX*NY*NZ <= c && c < 2*NX*NY*NZ ) VelX[i][j][k] = buffer[c+HeaderSize];
+     if ( 2*NX*NY*NZ <= c && c < 3*NX*NY*NZ ) VelY[i][j][k] = buffer[c+HeaderSize];
+     if ( 3*NX*NY*NZ <= c && c < 4*NX*NY*NZ ) VelZ[i][j][k] = buffer[c+HeaderSize];
+     if ( 4*NX*NY*NZ <= c && c < 5*NX*NY*NZ ) Pres[i][j][k] = buffer[c+HeaderSize];
+   }
+}
+
+
+void Interpolation_UM_IC( real x, real y, real z, real *Pri )
+{
+  real xyz[3] = {x, y, z};
+  int Nx = (int)Header[1];
+  int Ny = (int)Header[2];
+  int Nz = (int)Header[3];
+
+  real dx = Header[4];
+  real dy = Header[5];
+  real dz = Header[6];
+
+  if ( x<0 || x>Nx*dx ) {printf("x=%e is outside box (0<=x<=%e!\n", x, (real)Nx*dx); exit(0);}
+  if ( y<0 || y>Ny*dy ) {printf("y=%e is outside box (0<=x<=%e!\n", y, (real)Ny*dy); exit(0);}
+  if ( z<0 || z>Nz*dz ) {printf("z=%e is outside box (0<=x<=%e!\n", z, (real)Nz*dz); exit(0);}
+
+  real dxyz[3] = {dx, dy, dz};
+ 
+  int numGhost = (int)Header[7];
+
+  int NX = Nx+2*numGhost;
+  int NY = Ny+2*numGhost;
+  int NZ = Nz+2*numGhost;
+  int Idx = Mis_BinarySearch_Real(X, 0, NX-1, x);
+  int Jdx = Mis_BinarySearch_Real(Y, 0, NY-1, y);
+  int Kdx = Mis_BinarySearch_Real(Z, 0, NZ-1, z);
+
+  if (Idx<0 || Idx > NX-1){ printf("Idx=%d is out of range!\n", Idx); exit(0); }
+  if (Jdx<0 || Jdx > NY-1){ printf("Jdx=%d is out of range!\n", Jdx); exit(0); }
+  if (Kdx<0 || Kdx > NZ-1){ printf("Kdx=%d is out of range!\n", Kdx); exit(0); }
+
+
+  real Vertex000[5] = {Rhoo[Idx  ][Jdx  ][Kdx  ], VelX[Idx  ][Jdx  ][Kdx  ], VelY[Idx  ][Jdx  ][Kdx  ], VelZ[Idx  ][Jdx  ][Kdx  ], Pres[Idx  ][Jdx  ][Kdx  ]};
+  real Vertex001[5] = {Rhoo[Idx  ][Jdx  ][Kdx+1], VelX[Idx  ][Jdx  ][Kdx+1], VelY[Idx  ][Jdx  ][Kdx+1], VelZ[Idx  ][Jdx  ][Kdx+1], Pres[Idx  ][Jdx  ][Kdx+1]};
+  real Vertex010[5] = {Rhoo[Idx  ][Jdx+1][Kdx  ], VelX[Idx  ][Jdx+1][Kdx  ], VelY[Idx  ][Jdx+1][Kdx  ], VelZ[Idx  ][Jdx+1][Kdx  ], Pres[Idx  ][Jdx+1][Kdx  ]};
+  real Vertex100[5] = {Rhoo[Idx+1][Jdx  ][Kdx  ], VelX[Idx+1][Jdx  ][Kdx  ], VelY[Idx+1][Jdx  ][Kdx  ], VelZ[Idx+1][Jdx  ][Kdx  ], Pres[Idx+1][Jdx  ][Kdx  ]};
+  real Vertex011[5] = {Rhoo[Idx  ][Jdx+1][Kdx+1], VelX[Idx  ][Jdx+1][Kdx+1], VelY[Idx  ][Jdx+1][Kdx+1], VelZ[Idx  ][Jdx+1][Kdx+1], Pres[Idx  ][Jdx+1][Kdx+1]};
+  real Vertex101[5] = {Rhoo[Idx+1][Jdx  ][Kdx+1], VelX[Idx+1][Jdx  ][Kdx+1], VelY[Idx+1][Jdx  ][Kdx+1], VelZ[Idx+1][Jdx  ][Kdx+1], Pres[Idx+1][Jdx  ][Kdx+1]};
+  real Vertex110[5] = {Rhoo[Idx+1][Jdx+1][Kdx  ], VelX[Idx+1][Jdx+1][Kdx  ], VelY[Idx+1][Jdx+1][Kdx  ], VelZ[Idx+1][Jdx+1][Kdx  ], Pres[Idx+1][Jdx+1][Kdx  ]};
+  real Vertex111[5] = {Rhoo[Idx+1][Jdx+1][Kdx+1], VelX[Idx+1][Jdx+1][Kdx+1], VelY[Idx+1][Jdx+1][Kdx+1], VelZ[Idx+1][Jdx+1][Kdx+1], Pres[Idx+1][Jdx+1][Kdx+1]};
+
+  bool Unphy = false;
+
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex000, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex001, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex010, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex100, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex011, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex101, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex110, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex111, __FUNCTION__, __LINE__, true  );  
+
+  if (Unphy) exit(0);
+
+  real xyz000[3] = {X[Idx], Y[Jdx], Z[Kdx]};
+
+  for(int v=0;v<5;v++){
+    real FieldAtVertices[8] = {Vertex000[v], Vertex001[v], Vertex010[v], Vertex100[v], Vertex011[v], Vertex101[v], Vertex110[v], Vertex111[v]};
+
+    Pri[v] = TrilinearInterpolation(FieldAtVertices, xyz000, dxyz, xyz);
+  }
+}
 
 //-------------------------------------------------------------------------------------------------------
 // Function    :  SetGridIC
@@ -498,8 +659,9 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
       Pri[3] = (real)Amb_UniformVel[2];
       Pri[4] = (real)Amb_UniformTemp * Amb_UniformDens;
    }
-   else if ( Jet_Ambient == 1 ) //Milky Way
+   else if ( Jet_Ambient == 2 )
    {
+     Interpolation_UM_IC( x, y, z, Pri);
    }
 
    Hydro_Pri2Con( Pri, fluid, NULL_BOOL, NULL_INT, NULL, EoS_DensPres2Eint_CPUPtr,
@@ -655,7 +817,7 @@ bool Flu_ResetByUser_Jets( real fluid[], const double x, const double y, const d
       if ( Jet_PrecessionAxis[0] != 0.0 || Jet_PrecessionAxis[1] != 0.0 ||  Jet_PrecessionAxis[2] == 0.0 )
          CartesianRotate(xp, PrecessionAxis_Spherical[1], PrecessionAxis_Spherical[2], true);
 
-      Mis_Cartesian2Spherical(xp, rp);
+      ;Mis_Cartesian2Spherical(xp, rp);
 
       Prim[0] = Jet_SrcDens;
       Prim[1] = Jet_SrcVelSmooth*sin(rp[1])*cos(rp[2]);
@@ -781,6 +943,7 @@ void CartesianRotate( double x[], double theta, double phi, bool inverse )
 
   for (int i=0;i<3;i++) x[i] = xp[i];
 }
+
 
 //-------------------------------------------------------------------------------------------------------
 // Function    :  Init_TestProb_Hydro_Jets
