@@ -508,11 +508,11 @@ void SetArray()
    char TableFileName[] = "UM_IC";
    ReadBinFile(TableFileName, &buffer);
 
-   int HeaderSize = (int)buffer[0];
+   int headerSize = (int)buffer[0];
 
-   Header = (real*)malloc((size_t)HeaderSize*sizeof(real));
+   Header = (real*)malloc((size_t)headerSize*sizeof(real));
 
-   memcpy(Header, buffer, (size_t)HeaderSize*sizeof(real));
+   memcpy(Header, buffer, (size_t)headerSize*sizeof(real));
 
    int Nx = (int)Header[1];
    int Ny = (int)Header[2];
@@ -532,7 +532,7 @@ void SetArray()
    int NX = Nx+2*numGhost;
    int NY = Ny+2*numGhost;
    int NZ = Nz+2*numGhost;
-
+   printf("Nx=%d, Ny=%d, Nz=%d, numGhost=%d\n", Nx, Ny, Nz, numGhost);
    Rhoo = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
    VelX = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
    VelY = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
@@ -547,22 +547,25 @@ void SetArray()
    for (int i=-numGhost;i<Nx+numGhost;i++) X[i+numGhost] = (0.5+(real)i)*dx;
    for (int i=-numGhost;i<Ny+numGhost;i++) Y[i+numGhost] = (0.5+(real)i)*dy;
    for (int i=-numGhost;i<Nz+numGhost;i++) Z[i+numGhost] = (0.5+(real)i)*dz;
-  
-   for (int c=0;c<5*NX*NY*NZ;c++){
-     int i, j, k, cc;
-     int ii, jj, kk;
 
-     cc = c%(NX*NY*NZ);
-     i = (cc - cc%(NY*NZ)) / (NY*NZ);
-     j = ((cc - cc%NZ) / NZ) % NY;
-     k = cc%NZ;
 
-     if (          0 <= c && c <   NX*NY*NZ ) Rhoo[i][j][k] = buffer[c+HeaderSize];
-     if (   NX*NY*NZ <= c && c < 2*NX*NY*NZ ) VelX[i][j][k] = buffer[c+HeaderSize];
-     if ( 2*NX*NY*NZ <= c && c < 3*NX*NY*NZ ) VelY[i][j][k] = buffer[c+HeaderSize];
-     if ( 3*NX*NY*NZ <= c && c < 4*NX*NY*NZ ) VelZ[i][j][k] = buffer[c+HeaderSize];
-     if ( 4*NX*NY*NZ <= c && c < 5*NX*NY*NZ ) Pres[i][j][k] = buffer[c+HeaderSize];
+   for (int c=headerSize;c<5*NX*NY*NZ+headerSize;c++){
+     int i, j, k, ccc, cc;
+
+     cc = c - headerSize;
+
+     ccc = cc%(NX*NY*NZ);
+     i = (ccc - ccc%(NY*NZ)) / (NY*NZ);
+     j = ((ccc - ccc%NZ) / NZ) % NY;
+     k = ccc%NZ;
+
+     if (          0 <= cc && cc <   NX*NY*NZ ) Rhoo[i][j][k] = buffer[c];
+     if (   NX*NY*NZ <= cc && cc < 2*NX*NY*NZ ) VelX[i][j][k] = buffer[c];
+     if ( 2*NX*NY*NZ <= cc && cc < 3*NX*NY*NZ ) VelY[i][j][k] = buffer[c];
+     if ( 3*NX*NY*NZ <= cc && cc < 4*NX*NY*NZ ) VelZ[i][j][k] = buffer[c];
+     if ( 4*NX*NY*NZ <= cc && cc < 5*NX*NY*NZ ) Pres[i][j][k] = buffer[c];
    }
+  
 }
 
 
@@ -588,9 +591,9 @@ void Interpolation_UM_IC( real x, real y, real z, real *Pri )
   int NX = Nx+2*numGhost;
   int NY = Ny+2*numGhost;
   int NZ = Nz+2*numGhost;
-  int Idx = Mis_BinarySearch_Real(X, 0, NX-1, x);
-  int Jdx = Mis_BinarySearch_Real(Y, 0, NY-1, y);
-  int Kdx = Mis_BinarySearch_Real(Z, 0, NZ-1, z);
+  int Idx = Mis_BinarySearch_Real(X, numGhost, NX-1-numGhost, x);
+  int Jdx = Mis_BinarySearch_Real(Y, numGhost, NY-1-numGhost, y);
+  int Kdx = Mis_BinarySearch_Real(Z, numGhost, NZ-1-numGhost, z);
 
   if (Idx<0 || Idx > NX-1){ printf("Idx=%d is out of range!\n", Idx); exit(0); }
   if (Jdx<0 || Jdx > NY-1){ printf("Jdx=%d is out of range!\n", Jdx); exit(0); }
@@ -609,15 +612,19 @@ void Interpolation_UM_IC( real x, real y, real z, real *Pri )
   bool Unphy = false;
 
   Unphy |= SRHD_CheckUnphysical( NULL, Vertex000, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex001, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex010, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex100, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex011, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex101, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex110, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex111, __FUNCTION__, __LINE__, true  );  
+  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex001, __FUNCTION__, __LINE__, true  );  
+  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex010, __FUNCTION__, __LINE__, true  );  
+  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex100, __FUNCTION__, __LINE__, true  );  
+  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex011, __FUNCTION__, __LINE__, true  );  
+  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex101, __FUNCTION__, __LINE__, true  );  
+  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex110, __FUNCTION__, __LINE__, true  );  
+  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex111, __FUNCTION__, __LINE__, true  );  
 
-  if (Unphy) exit(0);
+  if (Unphy){
+    printf("Idx=%d, Jdx=%d, Kdx=%d\n", Idx, Jdx, Kdx);
+    printf("x=%e, y=%e, z=%e\n", x, y, z);
+    exit(0);
+  }
 
   real xyz000[3] = {X[Idx], Y[Jdx], Z[Kdx]};
 
