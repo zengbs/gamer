@@ -663,6 +663,17 @@ void Interpolation_UM_IC( real x, real y, real z, real *Pri )
   }
 }
 
+real IsothermalSlab_Pot(real z)
+{
+  real Pot;
+  Pot  = 2.0*M_PI*NEWTON_G*IsothermalSlab_PeakDens;
+  Pot /= SQR(IsothermalSlab_VelocityDispersion);
+  Pot  = log(cosh(z*sqrt(Pot)));
+  Pot *= 2.0*SQR(IsothermalSlab_VelocityDispersion);
+  
+  return Pot;
+}
+
 //-------------------------------------------------------------------------------------------------------
 // Function    :  SetGridIC
 // Description :  Set the problem-specific initial condition on grids
@@ -702,19 +713,14 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
    else if ( Jet_Ambient == 2 )
    {
      if (fabs(zc) < interfaceHeight){
-       Interpolation_UM_IC( x, y, z-zc+interfaceHeight, Pri);
+       Interpolation_UM_IC( x, y, z-IsothermalSlab_Center[2]+interfaceHeight, Pri);
        if(SRHD_CheckUnphysical( NULL, Pri, __FUNCTION__, __LINE__, true  )) {exit(0);}
      }
      else{
 
-       real IsothermalSlab_Pot, Dens_gDisk_ambient, PotAtZ0, ambientDens;
+       real Dens_gDisk_ambient, PotAtZ0, ambientDens;
 
-       IsothermalSlab_Pot  = 2.0*M_PI*NEWTON_G*IsothermalSlab_PeakDens;
-       IsothermalSlab_Pot /= SQR(IsothermalSlab_VelocityDispersion);
-       IsothermalSlab_Pot  = log(cosh(interfaceHeight*sqrt(IsothermalSlab_Pot)));
-       IsothermalSlab_Pot *= 2.0*SQR(IsothermalSlab_VelocityDispersion);
-
-       PotAtZ0 = IsothermalSlab_Pot;
+       PotAtZ0 = IsothermalSlab_Pot(interfaceHeight);
 
        Dens_gDisk_ambient  = ambientTemperature / gasDiskTemperature;
        Dens_gDisk_ambient *= exp( PotAtZ0*(ambientTemperature-gasDiskTemperature)/(ambientTemperature*gasDiskTemperature) );
@@ -726,7 +732,11 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
 
        real ambientPeakDens  = gasDiskPeakDens / Dens_gDisk_ambient; 
       
-       ambientDens  = -IsothermalSlab_Pot/ambientTemperature;
+       if (fabs(zc) > IsothermalSlab_Truncation)
+           ambientDens  = -IsothermalSlab_Pot(IsothermalSlab_Truncation)/ambientTemperature;
+       else 
+           ambientDens  = -IsothermalSlab_Pot(z)/ambientTemperature;
+
        ambientDens  = exp(ambientDens);
        ambientDens *= ambientPeakDens;
    
