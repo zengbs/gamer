@@ -532,7 +532,7 @@ void SetArray()
    int NX = Nx+2*numGhost;
    int NY = Ny+2*numGhost;
    int NZ = Nz+2*numGhost;
-   printf("Nx=%d, Ny=%d, Nz=%d, numGhost=%d\n", Nx, Ny, Nz, numGhost);
+
    Rhoo = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
    VelX = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
    VelY = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
@@ -566,6 +566,21 @@ void SetArray()
      if ( 4*NX*NY*NZ <= cc && cc < 5*NX*NY*NZ ) Pres[i][j][k] = buffer[c];
    }
   
+   //bool Pass = true;
+
+   //for (int i=0;i<NX;i++){
+   //for (int j=0;j<NY;j++){
+   //for (int k=0;k<NZ;k++){
+   //
+   //Pass &= Rhoo[i][j][k] == (real)16.;
+   //Pass &= VelX[i][j][k] == (real)32.;
+   //Pass &= VelY[i][j][k] == (real)64.;
+   //Pass &= VelZ[i][j][k] == (real)128.;
+   //Pass &= Pres[i][j][k] == (real)256.;
+  
+   //}}}
+   //if (Pass == false){ printf("fail!!!!!!!!!!!!!!!!!!!\n"); exit(0); }
+   //if (Pass == true) { printf("pass!!!!!!!!!!!!!!!!!!!\n"); exit(0); }
 }
 
 
