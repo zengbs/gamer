@@ -1,5 +1,6 @@
 #include <random>
 #include <limits.h>
+#include <math.h>
 #include "GAMER.h"
 #include "TestProb.h"
 
@@ -31,9 +32,6 @@ static double   Amb_UniformTemp;         // uniform ambient temperature
 
 // Milky Way parameters
        double   IsothermalSlab_Center[3];
-       double   IsothermalSlab_VelocityDispersion;
-       double   IsothermalSlab_PeakDens;
-       double   IsothermalSlab_Truncation;
 
 // jet fluid parameters
 static double   Jet_SrcVel;              // jet 4-velocity
@@ -56,6 +54,14 @@ static real ***Pres;
 static real *X;
 static real *Y;
 static real *Z;
+
+// fermi bubbles
+       real IsothermalSlab_VelocityDispersion;
+       real IsothermalSlab_PeakDens;
+       real IsothermalSlab_Truncation;
+static real ambientTemperature;
+static real gasDiskTemperature;
+static real gasDiskPeakDens;
 
 
 void Init_ExtPot_IsothermalSlab(); 
@@ -190,7 +196,6 @@ void SetParameter()
    ReadPara->Add( "Jet_SmoothVel",           &Jet_SmoothVel ,           false,        Useless_bool,   Useless_bool    );
    ReadPara->Add( "Jet_SrcDens",             &Jet_SrcDens   ,          -1.0,          Eps_double,     NoMax_double    );
    ReadPara->Add( "Jet_SrcTemp",             &Jet_SrcTemp   ,          -1.0,          Eps_double,     NoMax_double    );
-   ReadPara->Add( "ParticleMass",            &ParticleMass,            -1.0,          Eps_double,     NoMax_double    );
 
 // load source geometry parameters
    ReadPara->Add( "Jet_Radius",              &Jet_Radius,              -1.0,          Eps_double,     NoMax_double    );
@@ -219,12 +224,9 @@ void SetParameter()
    ReadPara->Add( "CharacteristicSpeed",     &CharacteristicSpeed,     -1.0,          NoMin_double,   NoMax_double    );
 
 // load Milky Way parameters
-   ReadPara->Add( "IsothermalSlab_VelocityDispersion",&IsothermalSlab_VelocityDispersion, -1.0,          Eps_double,     NoMax_double    );
-   ReadPara->Add( "IsothermalSlab_PeakDens",          &IsothermalSlab_PeakDens,           -1.0,          Eps_double,     NoMax_double    );
    ReadPara->Add( "IsothermalSlab_Center_x",          &IsothermalSlab_Center[0],          -1.0,          NoMin_double,   NoMax_double    );
    ReadPara->Add( "IsothermalSlab_Center_y",          &IsothermalSlab_Center[1],          -1.0,          NoMin_double,   NoMax_double    );
    ReadPara->Add( "IsothermalSlab_Center_z",          &IsothermalSlab_Center[2],          -1.0,          NoMin_double,   NoMax_double    );
-   ReadPara->Add( "IsothermalSlab_Truncation",        &IsothermalSlab_Truncation,         -1.0,          Eps_double,     NoMax_double    );
 
 // load time-dependent source varibles
    ReadPara->Add( "Jet_BurstStartTime",      &Jet_BurstStartTime,      -1.0,          NoMin_double,   NoMax_double    );
@@ -233,6 +235,9 @@ void SetParameter()
    ReadPara->Read( FileName );
 
    delete ReadPara;
+
+// Read header for the fermi bubbles
+   SetArray();
 
 // replace useless parameters with NaN
    if ( Jet_Ambient != 0 )
@@ -305,7 +310,7 @@ void SetParameter()
 
 // (1-2) convert to code unit
    Jet_SrcVel               *= Const_c     / UNIT_V;
-   Jet_SrcTemp              *= Const_kB    / (MOLECULAR_WEIGHT*ParticleMass*Const_c*Const_c);
+   Jet_SrcTemp              *= Const_kB    / (ParticleMass*Const_c*Const_c);
    Jet_SrcDens              *= 1.0         / UNIT_D;
 
    Jet_Radius               *= Const_kpc   / UNIT_L;
@@ -327,16 +332,29 @@ void SetParameter()
    }
    else if ( Jet_Ambient == 2 )
    {
+     IsothermalSlab_VelocityDispersion  = Header[15];
+     IsothermalSlab_PeakDens            = Header[16];
+     IsothermalSlab_Truncation          = Header[21];
+     gasDiskPeakDens                    = Header[19];
+
+     IsothermalSlab_VelocityDispersion *= 1e5/UNIT_V; // km/s --> 1/c
      IsothermalSlab_PeakDens           *= 1.0         / UNIT_D;
+     IsothermalSlab_Truncation         *= Const_kpc   / UNIT_L;
      IsothermalSlab_Center[0]          *= Const_kpc   / UNIT_L;
      IsothermalSlab_Center[1]          *= Const_kpc   / UNIT_L;
      IsothermalSlab_Center[2]          *= Const_kpc   / UNIT_L;
-     IsothermalSlab_Truncation         *= Const_kpc   / UNIT_L;
-     IsothermalSlab_VelocityDispersion *= 1e5/UNIT_V; // km/s --> 1/c
+
+     gasDiskPeakDens                   /= UNIT_D;
+
+     ambientTemperature                = Header[20]; 
+     ambientTemperature               *= Const_kB/(ParticleMass*UNIT_V*UNIT_V);
+
+     gasDiskTemperature                = Header[18];
+     gasDiskTemperature               *= Const_kB/(ParticleMass*UNIT_V*UNIT_V);
    }
    
 
-   Amb_UniformTemp          *= Const_kB    / (MOLECULAR_WEIGHT*ParticleMass*Const_c*Const_c);
+   Amb_UniformTemp          *= Const_kB    / (ParticleMass*Const_c*Const_c);
    Jet_AngularVelocity      *= 1.0;    // the unit of Jet_AngularVelocity is UNIT_T
 
    
@@ -387,7 +405,6 @@ void SetParameter()
       PRINT_WARNING( "OUTPUT_DT", OUTPUT_DT, FORMAT_REAL );
    }
 
-   SetArray();
 
 // (4) make a note
    if ( MPI_Rank == 0 )
@@ -426,12 +443,9 @@ void SetParameter()
    }
    else if ( Jet_Ambient == 2 && MPI_Rank == 0 )
    {
-     Aux_Message( stdout, "  IsothermalSlab_VelocityDispersion = %14.7e km/s\n",     IsothermalSlab_VelocityDispersion*UNIT_V/1e5 );
-     Aux_Message( stdout, "  IsothermalSlab_PeakDens           = %14.7e g/cm^3\n",   IsothermalSlab_PeakDens*UNIT_D               );
      Aux_Message( stdout, "  IsothermalSlab_Center[0]          = %14.7e kpc\n",      IsothermalSlab_Center[0]*UNIT_L/Const_kpc );
      Aux_Message( stdout, "  IsothermalSlab_Center[1]          = %14.7e kpc\n",      IsothermalSlab_Center[1]*UNIT_L/Const_kpc );
      Aux_Message( stdout, "  IsothermalSlab_Center[2]          = %14.7e kpc\n",      IsothermalSlab_Center[2]*UNIT_L/Const_kpc );
-     Aux_Message( stdout, "  IsothermalSlab_Truncation         = %14.7e kpc\n",      IsothermalSlab_Truncation*UNIT_L/Const_kpc );
    }
 
    if ( MPI_Rank == 0 )
@@ -514,16 +528,18 @@ void SetArray()
 
    memcpy(Header, buffer, (size_t)headerSize*sizeof(real));
 
-   int Nx = (int)Header[1];
-   int Ny = (int)Header[2];
-   int Nz = (int)Header[3];
+   ParticleMass = Header[8]*Header[9];
+
+   int Nx = (int)Header[22];
+   int Ny = (int)Header[23];
+   int Nz = (int)Header[24];
 
    if (5*Nx*Ny*Nz > INT_MAX) {printf("integer overflow!!\n"); exit(0);}
 
-   real Lx = Header[4];
-   real Ly = Header[5];
-   real Lz = Header[6];
-   int numGhost = (int)Header[7];
+   real Lx = Header[12];
+   real Ly = Header[13];
+   real Lz = Header[14];
+   int numGhost = (int)Header[25];
 
    real dx = Lx/(real)Nx;
    real dy = Lx/(real)Nx;
@@ -587,32 +603,29 @@ void SetArray()
 void Interpolation_UM_IC( real x, real y, real z, real *Pri )
 {
   real xyz[3] = {x, y, z};
-  int Nx = (int)Header[1];
-  int Ny = (int)Header[2];
-  int Nz = (int)Header[3];
+  int Nx = (int)Header[22];
+  int Ny = (int)Header[23];
+  int Nz = (int)Header[24];
 
-  real dx = Header[4];
-  real dy = Header[5];
-  real dz = Header[6];
-
-  if ( x<0 || x>Nx*dx ) {printf("x=%e is outside box (0<=x<=%e!\n", x, (real)Nx*dx); exit(0);}
-  if ( y<0 || y>Ny*dy ) {printf("y=%e is outside box (0<=x<=%e!\n", y, (real)Ny*dy); exit(0);}
-  if ( z<0 || z>Nz*dz ) {printf("z=%e is outside box (0<=x<=%e!\n", z, (real)Nz*dz); exit(0);}
+  real dx = Header[26];
+  real dy = Header[27];
+  real dz = Header[28];
 
   real dxyz[3] = {dx, dy, dz};
  
-  int numGhost = (int)Header[7];
+  int numGhost = (int)Header[25];
 
   int NX = Nx+2*numGhost;
   int NY = Ny+2*numGhost;
   int NZ = Nz+2*numGhost;
-  int Idx = Mis_BinarySearch_Real(X, numGhost, NX-1-numGhost, x);
-  int Jdx = Mis_BinarySearch_Real(Y, numGhost, NY-1-numGhost, y);
-  int Kdx = Mis_BinarySearch_Real(Z, numGhost, NZ-1-numGhost, z);
 
-  if (Idx<0 || Idx > NX-1){ printf("Idx=%d is out of range!\n", Idx); exit(0); }
-  if (Jdx<0 || Jdx > NY-1){ printf("Jdx=%d is out of range!\n", Jdx); exit(0); }
-  if (Kdx<0 || Kdx > NZ-1){ printf("Kdx=%d is out of range!\n", Kdx); exit(0); }
+  int Idx = Mis_BinarySearch_Real(X, 0, NX-2, x);
+  int Jdx = Mis_BinarySearch_Real(Y, 0, NY-2, y);
+  int Kdx = Mis_BinarySearch_Real(Z, 0, NZ-2, z);
+
+  if (Idx<0 || Idx > NX-2){ printf("Idx=%d is out of range!\n", Idx); exit(0); }
+  if (Jdx<0 || Jdx > NY-2){ printf("Jdx=%d is out of range!\n", Jdx); exit(0); }
+  if (Kdx<0 || Kdx > NZ-2){ printf("Kdx=%d is out of range!\n", Kdx); exit(0); }
 
 
   real Vertex000[5] = {Rhoo[Idx  ][Jdx  ][Kdx  ], VelX[Idx  ][Jdx  ][Kdx  ], VelY[Idx  ][Jdx  ][Kdx  ], VelZ[Idx  ][Jdx  ][Kdx  ], Pres[Idx  ][Jdx  ][Kdx  ]};
@@ -627,13 +640,13 @@ void Interpolation_UM_IC( real x, real y, real z, real *Pri )
   bool Unphy = false;
 
   Unphy |= SRHD_CheckUnphysical( NULL, Vertex000, __FUNCTION__, __LINE__, true  );  
-  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex001, __FUNCTION__, __LINE__, true  );  
-  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex010, __FUNCTION__, __LINE__, true  );  
-  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex100, __FUNCTION__, __LINE__, true  );  
-  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex011, __FUNCTION__, __LINE__, true  );  
-  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex101, __FUNCTION__, __LINE__, true  );  
-  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex110, __FUNCTION__, __LINE__, true  );  
-  //Unphy |= SRHD_CheckUnphysical( NULL, Vertex111, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex001, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex010, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex100, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex011, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex101, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex110, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex111, __FUNCTION__, __LINE__, true  );  
 
   if (Unphy){
     printf("Idx=%d, Jdx=%d, Kdx=%d\n", Idx, Jdx, Kdx);
@@ -671,7 +684,12 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
                 const int lv, double AuxArray[] )
 {
 // variables for jet
-   real   Pri[NCOMP_FLUID];
+   real Pri[NCOMP_FLUID];
+   real xc = x - IsothermalSlab_Center[0];
+   real yc = y - IsothermalSlab_Center[1];
+   real zc = z - IsothermalSlab_Center[2];
+   real interfaceHeight = Header[17];
+   interfaceHeight *= Const_kpc/UNIT_L;
 
    if ( Jet_Ambient == 0 ) // uniform ambient
    {
@@ -683,8 +701,44 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
    }
    else if ( Jet_Ambient == 2 )
    {
-     Interpolation_UM_IC( x, y, z, Pri);
+     if (fabs(zc) < interfaceHeight){
+       Interpolation_UM_IC( x, y, z-zc+interfaceHeight, Pri);
+       if(SRHD_CheckUnphysical( NULL, Pri, __FUNCTION__, __LINE__, true  )) {exit(0);}
+     }
+     else{
+
+       real IsothermalSlab_Pot, Dens_gDisk_ambient, PotAtZ0, ambientDens;
+
+       IsothermalSlab_Pot  = 2.0*M_PI*NEWTON_G*IsothermalSlab_PeakDens;
+       IsothermalSlab_Pot /= SQR(IsothermalSlab_VelocityDispersion);
+       IsothermalSlab_Pot  = log(cosh(interfaceHeight*sqrt(IsothermalSlab_Pot)));
+       IsothermalSlab_Pot *= 2.0*SQR(IsothermalSlab_VelocityDispersion);
+
+       PotAtZ0 = IsothermalSlab_Pot;
+
+       Dens_gDisk_ambient  = ambientTemperature / gasDiskTemperature;
+       Dens_gDisk_ambient *= exp( PotAtZ0*(ambientTemperature-gasDiskTemperature)/(ambientTemperature*gasDiskTemperature) );
+
+       if (Dens_gDisk_ambient > HUGE_NUMBER || Dens_gDisk_ambient < -HUGE_NUMBER){
+         printf("Dens_gDisk_ambient=%e! %s: %d\n", Dens_gDisk_ambient, __FUNCTION__, __LINE__);
+         exit(0);
+       }
+
+       real ambientPeakDens  = gasDiskPeakDens / Dens_gDisk_ambient; 
+      
+       ambientDens  = -IsothermalSlab_Pot/ambientTemperature;
+       ambientDens  = exp(ambientDens);
+       ambientDens *= ambientPeakDens;
+   
+       Pri[0] = ambientDens;
+       Pri[1] = 0.0;
+       Pri[2] = 0.0;
+       Pri[3] = 0.0;
+       Pri[4] = ambientDens*ambientTemperature;
+       if(SRHD_CheckUnphysical( NULL, Pri, __FUNCTION__, __LINE__, true  )){exit(0);}
+     }
    }
+
 
    Hydro_Pri2Con( Pri, fluid, NULL_BOOL, NULL_INT, NULL, EoS_DensPres2Eint_CPUPtr,
                   EoS_Temp2HTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr,
@@ -839,7 +893,7 @@ bool Flu_ResetByUser_Jets( real fluid[], const double x, const double y, const d
       if ( Jet_PrecessionAxis[0] != 0.0 || Jet_PrecessionAxis[1] != 0.0 ||  Jet_PrecessionAxis[2] == 0.0 )
          CartesianRotate(xp, PrecessionAxis_Spherical[1], PrecessionAxis_Spherical[2], true);
 
-      ;Mis_Cartesian2Spherical(xp, rp);
+      Mis_Cartesian2Spherical(xp, rp);
 
       Prim[0] = Jet_SrcDens;
       Prim[1] = Jet_SrcVelSmooth*sin(rp[1])*cos(rp[2]);

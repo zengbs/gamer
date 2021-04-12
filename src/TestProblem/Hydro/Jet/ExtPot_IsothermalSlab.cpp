@@ -82,7 +82,7 @@ static real ExtPot_IsothermalSlab( const double x, const double y, const double 
    const real   IsothermalSlab_VelocityDispersion = (real)UserArray_Flt[ 3];   // 
    const real   IsothermalSlab_PeakDens           = (real)UserArray_Flt[ 4];   // 
    const real   NewtonG                           =       UserArray_Flt[ 5];
-   const real   BoxSize_Z                         =       UserArray_Flt[ 6];    
+   const real   BoxSize_Z                         =       UserArray_Flt[ 6];
    const double dz                                = z - cz;
    const real   IsothermalSlab_Truncation         = (real)UserArray_Flt[ 7];   // 
 
