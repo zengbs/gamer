@@ -560,9 +560,9 @@ void SetArray()
    Z = (real*)calloc((size_t)NZ,sizeof(real));
 
 
-   for (int i=-numGhost;i<Nx+numGhost;i++) X[i+numGhost] = (0.5+(real)i)*dx;
-   for (int i=-numGhost;i<Ny+numGhost;i++) Y[i+numGhost] = (0.5+(real)i)*dy;
-   for (int i=-numGhost;i<Nz+numGhost;i++) Z[i+numGhost] = (0.5+(real)i)*dz;
+   for (int i=-numGhost;i<NX-numGhost;i++) X[i+numGhost] = (0.5+(real)i)*dx;
+   for (int i=-numGhost;i<NY-numGhost;i++) Y[i+numGhost] = (0.5+(real)i)*dy;
+   for (int i=-numGhost;i<NZ-numGhost;i++) Z[i+numGhost] = (0.5+(real)i)*dz;
 
 
    for (int c=headerSize;c<5*NX*NY*NZ+headerSize;c++){
@@ -619,9 +619,9 @@ void Interpolation_UM_IC( real x, real y, real z, real *Pri )
   int NY = Ny+2*numGhost;
   int NZ = Nz+2*numGhost;
 
-  int Idx = Mis_BinarySearch_Real(X, 0, NX-2, x);
-  int Jdx = Mis_BinarySearch_Real(Y, 0, NY-2, y);
-  int Kdx = Mis_BinarySearch_Real(Z, 0, NZ-2, z);
+  int Idx = Mis_BinarySearch_Real(X, 0, NX-1, x);
+  int Jdx = Mis_BinarySearch_Real(Y, 0, NY-1, y);
+  int Kdx = Mis_BinarySearch_Real(Z, 0, NZ-1, z);
 
   if (Idx<0 || Idx > NX-2){ printf("Idx=%d is out of range!\n", Idx); exit(0); }
   if (Jdx<0 || Jdx > NY-2){ printf("Jdx=%d is out of range!\n", Jdx); exit(0); }

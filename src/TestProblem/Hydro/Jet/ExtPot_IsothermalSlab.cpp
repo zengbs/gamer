@@ -15,9 +15,9 @@
 #ifndef __CUDACC__
 
 extern double IsothermalSlab_Center[3];
-extern double IsothermalSlab_VelocityDispersion;
-extern double IsothermalSlab_PeakDens;
-extern double IsothermalSlab_Truncation;
+extern real IsothermalSlab_VelocityDispersion;
+extern real IsothermalSlab_PeakDens;
+extern real IsothermalSlab_Truncation;
 
 //-------------------------------------------------------------------------------------------------------
 // Function    :  SetExtPotAuxArray_IsothermalSlab
@@ -73,8 +73,8 @@ void SetExtPotAuxArray_IsothermalSlab( double AuxArray_Flt[], int AuxArray_Int[]
 //-----------------------------------------------------------------------------------------
 GPU_DEVICE_NOINLINE
 static real ExtPot_IsothermalSlab( const double x, const double y, const double z, const double Time,
-                             const double UserArray_Flt[], const int UserArray_Int[],
-                             const ExtPotUsage_t Usage, const real PotTable[] )
+                                   const double UserArray_Flt[], const int UserArray_Int[],
+                                   const ExtPotUsage_t Usage, const real PotTable[] )
 {
 
 // halo potential
@@ -98,7 +98,6 @@ static real ExtPot_IsothermalSlab( const double x, const double y, const double 
      stellarDiskPot = 2.0*IsothermalSlab_VelocityDispersion_Sqr*log(cosh(IsothermalSlab_Truncation*stellarDiskPot));
    else
      stellarDiskPot = 2.0*IsothermalSlab_VelocityDispersion_Sqr*log(cosh(dz*stellarDiskPot));
-
 
    return stellarDiskPot;
 
