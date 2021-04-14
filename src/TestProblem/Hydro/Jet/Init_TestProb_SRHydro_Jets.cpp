@@ -747,7 +747,7 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
        if (fabs(zc) > IsothermalSlab_Truncation)
            ambientDens  = -IsothermalSlab_Pot(IsothermalSlab_Truncation)/ambientTemperature;
        else 
-           ambientDens  = -IsothermalSlab_Pot(z)/ambientTemperature;
+           ambientDens  = -IsothermalSlab_Pot(zc)/ambientTemperature;
 
        ambientDens  = exp(ambientDens);
        ambientDens *= ambientPeakDens;
