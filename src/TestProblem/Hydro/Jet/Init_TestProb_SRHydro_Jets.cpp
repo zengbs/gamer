@@ -560,28 +560,40 @@ void SetArray()
    Z = (real*)calloc((size_t)NZ,sizeof(real));
 
 
-   for (int i=-numGhost;i<NX-numGhost;i++) X[i+numGhost] = (0.5+(real)i)*dx;
-   for (int i=-numGhost;i<NY-numGhost;i++) Y[i+numGhost] = (0.5+(real)i)*dy;
-   for (int i=-numGhost;i<NZ-numGhost;i++) Z[i+numGhost] = (0.5+(real)i)*dz;
+   //for (int i=-numGhost;i<NX-numGhost;i++) X[i+numGhost] = (0.5+(real)i)*dx;
+   //for (int i=-numGhost;i<NY-numGhost;i++) Y[i+numGhost] = (0.5+(real)i)*dy;
+   //for (int i=-numGhost;i<NZ-numGhost;i++) Z[i+numGhost] = (0.5+(real)i)*dz;
+
+   real *Ptr;
+
+   Ptr = buffer + headerSize;
 
 
-   for (int c=headerSize;c<5*NX*NY*NZ+headerSize;c++){
-     int i, j, k, ccc, cc;
+   for (int c=0;c<5*NX*NY*NZ;c++){
+     int i, j, k, cc;
 
-     cc = c - headerSize;
+     cc = c%(NX*NY*NZ);
+     i = (cc - cc%(NY*NZ)) / (NY*NZ);
+     j = ((cc - cc%NZ) / NZ) % NY;
+     k = cc%NZ;
 
-     ccc = cc%(NX*NY*NZ);
-     i = (ccc - ccc%(NY*NZ)) / (NY*NZ);
-     j = ((ccc - ccc%NZ) / NZ) % NY;
-     k = ccc%NZ;
+     if (          0 <= c && c <   NX*NY*NZ ) Rhoo[i][j][k] = Ptr[c];
+     if (   NX*NY*NZ <= c && c < 2*NX*NY*NZ ) VelX[i][j][k] = Ptr[c];
+     if ( 2*NX*NY*NZ <= c && c < 3*NX*NY*NZ ) VelY[i][j][k] = Ptr[c];
+     if ( 3*NX*NY*NZ <= c && c < 4*NX*NY*NZ ) VelZ[i][j][k] = Ptr[c];
+     if ( 4*NX*NY*NZ <= c && c < 5*NX*NY*NZ ) Pres[i][j][k] = Ptr[c];
 
-     if (          0 <= cc && cc <   NX*NY*NZ ) Rhoo[i][j][k] = buffer[c];
-     if (   NX*NY*NZ <= cc && cc < 2*NX*NY*NZ ) VelX[i][j][k] = buffer[c];
-     if ( 2*NX*NY*NZ <= cc && cc < 3*NX*NY*NZ ) VelY[i][j][k] = buffer[c];
-     if ( 3*NX*NY*NZ <= cc && cc < 4*NX*NY*NZ ) VelZ[i][j][k] = buffer[c];
-     if ( 4*NX*NY*NZ <= cc && cc < 5*NX*NY*NZ ) Pres[i][j][k] = buffer[c];
    }
   
+   Ptr += 5*NX*NY*NZ;
+   for (int c=0;c<NX;c++) X[c] = Ptr[c];
+
+   Ptr += NX;
+   for (int c=0;c<NY;c++) Y[c] = Ptr[c];
+
+   Ptr += NY;
+   for (int c=0;c<NZ;c++) Z[c] = Ptr[c];
+
    //bool Pass = true;
 
    //for (int i=0;i<NX;i++){
@@ -593,7 +605,7 @@ void SetArray()
    //Pass &= VelY[i][j][k] == (real)64.;
    //Pass &= VelZ[i][j][k] == (real)128.;
    //Pass &= Pres[i][j][k] == (real)256.;
-  
+
    //}}}
    //if (Pass == false){ printf("fail!!!!!!!!!!!!!!!!!!!\n"); exit(0); }
    //if (Pass == true) { printf("pass!!!!!!!!!!!!!!!!!!!\n"); exit(0); }
@@ -623,9 +635,9 @@ void Interpolation_UM_IC( real x, real y, real z, real *Pri )
   int Jdx = Mis_BinarySearch_Real(Y, 0, NY-1, y);
   int Kdx = Mis_BinarySearch_Real(Z, 0, NZ-1, z);
 
-  if (Idx<0 || Idx > NX-2){ printf("Idx=%d is out of range!\n", Idx); exit(0); }
-  if (Jdx<0 || Jdx > NY-2){ printf("Jdx=%d is out of range!\n", Jdx); exit(0); }
-  if (Kdx<0 || Kdx > NZ-2){ printf("Kdx=%d is out of range!\n", Kdx); exit(0); }
+  if (Idx<0 || Idx > NX-2){ printf("x=%e is out of range! X[0]=%e, X[%d]=%e\n", x, X[0], NX-1, X[NX-1]); exit(0); }
+  if (Jdx<0 || Jdx > NY-2){ printf("y=%e is out of range! Y[0]=%e, Y[%d]=%e\n", y, Y[0], NY-1, Y[NY-1]); exit(0); }
+  if (Kdx<0 || Kdx > NZ-2){ printf("z=%e is out of range! Z[0]=%e, Z[%d]=%e\n", z, Z[0], NZ-1, Z[NZ-1]); exit(0); }
 
 
   real Vertex000[5] = {Rhoo[Idx  ][Jdx  ][Kdx  ], VelX[Idx  ][Jdx  ][Kdx  ], VelY[Idx  ][Jdx  ][Kdx  ], VelZ[Idx  ][Jdx  ][Kdx  ], Pres[Idx  ][Jdx  ][Kdx  ]};
@@ -713,7 +725,7 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
    else if ( Jet_Ambient == 2 )
    {
      if (fabs(zc) < interfaceHeight){
-       Interpolation_UM_IC( x, y, z-IsothermalSlab_Center[2]+interfaceHeight, Pri);
+       Interpolation_UM_IC( xc, yc, zc, Pri);
        if(SRHD_CheckUnphysical( NULL, Pri, __FUNCTION__, __LINE__, true  )) {exit(0);}
      }
      else{
