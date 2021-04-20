@@ -66,7 +66,7 @@ void Hydro_FullStepUpdate( const real g_Input[][ CUBE(FLU_NXT) ], real g_Output[
                            const real g_FC_B[][ PS2P1*SQR(PS2) ], const real g_Flux[][NCOMP_TOTAL_PLUS_MAG][ CUBE(N_FC_FLUX) ],
                            const real dt, const real dh, const real MinDens, const real MinEint,
                            const real DualEnergySwitch, const bool NormPassive, const int NNorm, const int NormIdx[],
-                           const double EoS_AuxArray_Flt[] );
+                           const double EoS_AuxArray_Flt[], char *state );
 #if   ( RSOLVER == EXACT )
 void Hydro_RiemannSolver_Exact( const int XYZ, real Flux_Out[], const real L_In[], const real R_In[],
                                 const real MinDens, const real MinPres, const EoS_DE2P_t EoS_DensEint2Pres,
@@ -305,6 +305,18 @@ void CPU_FluidSolver_MHM(
 #endif // #ifdef __CUDACC__ ... else ...
 {
 
+   const char Max = 4;
+   char iteration;
+   real AdaptiveMinModCoeff;                                                                                                             
+         
+#  ifdef __CUDACC__
+   __shared__ char state;
+#  else  
+   char state;
+#  endif 
+
+
+
 #  ifdef UNSPLIT_GRAVITY
    const bool CorrHalfVel          = true;
 #  else
@@ -364,10 +376,11 @@ void CPU_FluidSolver_MHM(
 #     ifdef __CUDACC__
       const int P = blockIdx.x;
 #     else
-#     pragma omp for schedule( runtime )
+#     pragma omp for schedule( runtime ) private( iteration, AdaptiveMinModCoeff, state )
       for (int P=0; P<NPatchGroup; P++)
 #     endif
       {
+         iteration = 0;
 
 //       1. half-step prediction
 //       1-a. MHM_RP: use Riemann solver to calculate the half-step fluxes
@@ -449,53 +462,80 @@ void CPU_FluidSolver_MHM(
 //       1-b. MHM: use interpolated face-centered values to calculate the half-step fluxes
 #        elif ( FLU_SCHEME == MHM )
 
-//       evaluate the face-centered values by data reconstruction
-         Hydro_DataReconstruction( g_Flu_Array_In[P], NULL, g_PriVar_1PG, g_FC_Var_1PG, g_Slope_PPM_1PG,
-                                   Con2Pri_Yes, LR_Limiter, MinMod_Coeff, dt, dh,
-                                   MinDens, MinPres, MinEint, NormPassive, NNorm, c_NormIdx,
-                                   JeansMinPres, JeansMinPres_Coeff,
-                                   EoS_DensEint2Pres_Func, EoS_DensPres2Eint_Func, EoS_DensPres2CSqr_Func,
-                                   EoS_GuessHTilde_Func, EoS_HTilde2Temp_Func, EoS_Temp2HTilde_Func,
-                                   c_EoS_AuxArray_Flt, c_EoS_AuxArray_Int, c_EoS_Table );
-
-#        endif // #if ( FLU_SCHEME == MHM_RP ) ... else ...
+         do {
+               AdaptiveMinModCoeff = ( Max - iteration ) * ( MinMod_Coeff / (real) Max );
 
 
-//       2. evaluate the full-step fluxes
-#        ifdef MHD
-         const int NSkip_N = 0;
-         const int NSkip_T = 0;
-#        else
-         const int NSkip_N = 0;
-         const int NSkip_T = 1;
-#        endif
-         Hydro_ComputeFlux( g_FC_Var_1PG, g_FC_Flux_1PG, N_FL_FLUX, NSkip_N, NSkip_T,
-                            CorrHalfVel, g_Pot_Array_USG[P], g_Corner_Array[P],
-                            dt, dh, Time, UsePot, ExtAcc, ExtAcc_Func, c_ExtAcc_AuxArray,
-                            MinDens, MinPres, StoreFlux, g_Flux_Array[P],
-                            EoS_DensEint2Pres_Func, EoS_DensPres2CSqr_Func,
-                            EoS_GuessHTilde_Func, EoS_HTilde2Temp_Func, EoS_Temp2HTilde_Func,
-                            EoS_Temper2CSqr_Func, c_EoS_AuxArray_Flt, c_EoS_AuxArray_Int, c_EoS_Table );
+//             evaluate the face-centered values by data reconstruction
+               Hydro_DataReconstruction( g_Flu_Array_In[P], NULL, g_PriVar_1PG, g_FC_Var_1PG, g_Slope_PPM_1PG,
+                                         Con2Pri_Yes, LR_Limiter, AdaptiveMinModCoeff, dt, dh,
+                                         MinDens, MinPres, MinEint, NormPassive, NNorm, c_NormIdx,
+                                         JeansMinPres, JeansMinPres_Coeff,
+                                         EoS_DensEint2Pres_Func, EoS_DensPres2Eint_Func, EoS_DensPres2CSqr_Func,
+                                         EoS_GuessHTilde_Func, EoS_HTilde2Temp_Func, EoS_Temp2HTilde_Func,
+                                         c_EoS_AuxArray_Flt, c_EoS_AuxArray_Int, c_EoS_Table );
+
+#              endif // #if ( FLU_SCHEME == MHM_RP ) ... else ...
 
 
-//       3. evaluate electric field and update B field at the full time-step
-//          --> must update B field before Hydro_FullStepUpdate() since the latter requires
-//              the updated magnetic energy when adopting the dual-energy formalism
-#        ifdef MHD
-         MHD_ComputeElectric( g_EC_Ele_1PG, g_FC_Flux_1PG, g_PriVar_Half_1PG, N_FL_ELE, N_FL_FLUX,
-                              N_HF_VAR, LR_GHOST_SIZE, dt, dh, StoreElectric, g_Ele_Array[P],
-                              CorrHalfVel, g_Pot_Array_USG[P], g_Corner_Array[P], Time,
-                              UsePot, ExtAcc, ExtAcc_Func, c_ExtAcc_AuxArray );
+//             2. evaluate the full-step fluxes
+#              ifdef MHD
+               const int NSkip_N = 0;
+               const int NSkip_T = 0;
+#              else
+               const int NSkip_N = 0;
+               const int NSkip_T = 1;
+#              endif
 
-         MHD_UpdateMagnetic( g_Mag_Array_Out[P][0], g_Mag_Array_Out[P][1], g_Mag_Array_Out[P][2],
-                             g_Mag_Array_In[P], g_EC_Ele_1PG, dt, dh, PS2, N_FL_ELE, FLU_GHOST_SIZE );
-#        endif
+               int tid;
+#              ifdef OPNEMP
+               tid = omp_get_thread_num();                                           
+#              else
+               tid = 0;
+#              endif
+#              ifdef __CUDACC__                                                             
+               if ( tid == 0 && threadIdx.x == 0 && state == 1 )
+#              else                              
+               if ( MPI_Rank == 0 && tid == 0 && state == 1 )
+#              endif                                                                        
+                 printf("iteration=%d, AdaptiveMinModCoeff=%13.10f\n", iteration, AdaptiveMinModCoeff );
 
 
-//       4. full-step evolution
-         Hydro_FullStepUpdate( g_Flu_Array_In[P], g_Flu_Array_Out[P], g_DE_Array_Out[P], g_Mag_Array_Out[P],
-                               g_FC_Flux_1PG, dt, dh, MinDens, MinEint, DualEnergySwitch,
-                               NormPassive, NNorm, c_NormIdx, c_EoS_AuxArray_Flt );
+               state = 0;
+
+               Hydro_ComputeFlux( g_FC_Var_1PG, g_FC_Flux_1PG, N_FL_FLUX, NSkip_N, NSkip_T,
+                                  CorrHalfVel, g_Pot_Array_USG[P], g_Corner_Array[P],
+                                  dt, dh, Time, UsePot, ExtAcc, ExtAcc_Func, c_ExtAcc_AuxArray,
+                                  MinDens, MinPres, StoreFlux, g_Flux_Array[P],
+                                  EoS_DensEint2Pres_Func, EoS_DensPres2CSqr_Func,
+                                  EoS_GuessHTilde_Func, EoS_HTilde2Temp_Func, EoS_Temp2HTilde_Func,
+                                  EoS_Temper2CSqr_Func, c_EoS_AuxArray_Flt, c_EoS_AuxArray_Int, c_EoS_Table );
+
+
+//             3. evaluate electric field and update B field at the full time-step
+//                --> must update B field before Hydro_FullStepUpdate() since the latter requires
+//                    the updated magnetic energy when adopting the dual-energy formalism
+#              ifdef MHD
+               MHD_ComputeElectric( g_EC_Ele_1PG, g_FC_Flux_1PG, g_PriVar_Half_1PG, N_FL_ELE, N_FL_FLUX,
+                                    N_HF_VAR, LR_GHOST_SIZE, dt, dh, StoreElectric, g_Ele_Array[P],
+                                    CorrHalfVel, g_Pot_Array_USG[P], g_Corner_Array[P], Time,
+                                    UsePot, ExtAcc, ExtAcc_Func, c_ExtAcc_AuxArray );
+
+               MHD_UpdateMagnetic( g_Mag_Array_Out[P][0], g_Mag_Array_Out[P][1], g_Mag_Array_Out[P][2],
+                                   g_Mag_Array_In[P], g_EC_Ele_1PG, dt, dh, PS2, N_FL_ELE, FLU_GHOST_SIZE );
+#              endif
+
+
+//             4. full-step evolution
+               Hydro_FullStepUpdate( g_Flu_Array_In[P], g_Flu_Array_Out[P], g_DE_Array_Out[P], g_Mag_Array_Out[P],
+                                     g_FC_Flux_1PG, dt, dh, MinDens, MinEint, DualEnergySwitch,
+                                     NormPassive, NNorm, c_NormIdx, c_EoS_AuxArray_Flt, &state );
+ 
+               iteration++;
+ 
+ 
+            } while( state && iteration <= Max );
+
 
       } // loop over all patch groups
    } // OpenMP parallel region

@@ -58,7 +58,7 @@ void Hydro_FullStepUpdate( const real g_Input[][ CUBE(FLU_NXT) ], real g_Output[
                            const real g_FC_B[][ PS2P1*SQR(PS2) ], const real g_Flux[][NCOMP_TOTAL_PLUS_MAG][ CUBE(N_FC_FLUX) ],
                            const real dt, const real dh, const real MinDens, const real MinEint,
                            const real DualEnergySwitch, const bool NormPassive, const int NNorm, const int NormIdx[],
-                           const double EoS_AuxArray_Flt[] )
+                           const double EoS_AuxArray_Flt[], char *state )
 {
 
    const int  didx_flux[3] = { 1, N_FL_FLUX, SQR(N_FL_FLUX) };
@@ -164,6 +164,25 @@ void Hydro_FullStepUpdate( const real g_Input[][ CUBE(FLU_NXT) ], real g_Output[
 
 //    4. store results to the output array
       for (int v=0; v<NCOMP_TOTAL; v++)   g_Output[v][idx_out] = Output_1Cell[v];
+
+
+      if(SRHD_CheckUnphysical(Output_1Cell, NULL, __FUNCTION__, __LINE__, false))
+      {
+#       ifdef __CUDACC__
+        atomicOr ( (int*)state, 1); 
+#       else
+        *state = *state | 1;
+#       endif
+      }
+
+
+//    waiting all threads within a block
+#     ifdef __CUDACC__
+      __syncthreads();
+#     endif
+ 
+//    return all threads within a block 
+      if ( *state != 0 ) return;
 
 
 //    5. check the negative density and energy
