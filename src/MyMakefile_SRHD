@@ -186,7 +186,7 @@ SIMU_OPTION += -DGPU_ARCH=TURING
 
 # bitwise reproducibility
 #SIMU_OPTION += -DBITWISE_REPRODUCIBILITY
-#SIMU_OPTION += -DCHECK_FAILED_CELL_IN_FLUID
+SIMU_OPTION += -DCHECK_FAILED_CELL_IN_FLUID
 # measure the wall-clock time of GAMER
 SIMU_OPTION += -DTIMING
 
@@ -423,7 +423,7 @@ GPU_FILE    := CUAPI_Asyn_FluidSolver.cu  CUAPI_DiagnoseDevice.cu  CUAPI_MemAllo
 
 # C/C++ source files (compiled with c++ compiler)
 CPU_FILE    := Main.cpp  EvolveLevel.cpp  InvokeSolver.cpp  Prepare_PatchData.cpp \
-               InterpolateGhostZone.cpp
+               InterpolateGhostZone.cpp AdaptiveInterpolate.cpp
 
 CPU_FILE    += Aux_Check_Parameter.cpp  Aux_Check_Conservation.cpp  Aux_Check.cpp  Aux_Check_Finite.cpp \
                Aux_Check_FluxAllocate.cpp  Aux_Check_PatchAllocate.cpp  Aux_Check_ProperNesting.cpp \

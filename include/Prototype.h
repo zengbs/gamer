@@ -230,12 +230,15 @@ void Init_ByRestart_HDF5( const char *FileName );
 
 
 // Interpolation
+void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3], const int CRange[3],                                   
+                          real FData [], const int FSize[3], const int FStart[3],
+                          const int NComp, const int TVar, const IntScheme_t IntScheme, const bool UnwrapPhase,
+                          const bool Monotonic[], const bool OppSign0thOrder );
 void Int_Table( const IntScheme_t IntScheme, int &NSide, int &NGhost );
 void Interpolate( real CData [], const int CSize[3], const int CStart[3], const int CRange[3],
                   real FData [], const int FSize[3], const int FStart[3],
                   const int NComp, const IntScheme_t IntScheme, const bool UnwrapPhase, const bool Monotonic[],
-                  const bool OppSign0thOrder );
-
+                  const real IntMonoCoeffconst, bool OppSign0thOrder );
 
 // Miscellaneous
 template <typename T> void  Mis_Idx1D2Idx3D( const int Size[], const T Idx1D, int Idx3D[] );
