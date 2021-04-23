@@ -21,6 +21,7 @@ static int      Jet_Ambient;             // [0/1/9]: uniform/Milky-Way/load-from
 static bool     Jet_Precession;          // flag: precessing jet source
 static bool     Jet_TimeDependentSrc;    // flag: time-dependent fluid variables in source
 static int      Jet_Fire;                // [0/1/2/3]: no jet/jet1/jet2/bipolar jet
+static double   Jet_Duration;            // a duration of jet injection from the start of simulation
 
 // general parameters
 static double   ParticleMass;            // atomic mass unit in jet source
@@ -190,6 +191,7 @@ void SetParameter()
    ReadPara->Add( "Jet_Fire",                &Jet_Fire,                 3,                       0,              3    );
    ReadPara->Add( "Jet_Precession",          &Jet_Precession,           false,        Useless_bool,   Useless_bool    );
    ReadPara->Add( "Jet_TimeDependentSrc",    &Jet_TimeDependentSrc,     false,        Useless_bool,   Useless_bool    );
+   ReadPara->Add( "Jet_Duration",            &Jet_Duration        ,     NoMax_double,          0.0,   NoMax_double    );
 
 // load jet fluid parameters
    ReadPara->Add( "Jet_SrcVel",              &Jet_SrcVel    ,          -1.0,          NoMin_double,   NoMax_double    );
@@ -322,6 +324,7 @@ void SetParameter()
    Jet_CenOffset[1]         *= Const_kpc   / UNIT_L;
    Jet_CenOffset[2]         *= Const_kpc   / UNIT_L;
 
+   Jet_Duration             *= Const_Myr   / UNIT_T;
 
    if ( Jet_Ambient == 0  )
    {
@@ -416,6 +419,7 @@ void SetParameter()
      Aux_Message( stdout, "  Jet_SmoothVel            = %d\n",                Jet_SmoothVel                                   );
      Aux_Message( stdout, "  Jet_Precession           = %d\n",                Jet_Precession                                  );
      Aux_Message( stdout, "  Jet_TimeDependentSrc     = %d\n",                Jet_TimeDependentSrc                            );
+     Aux_Message( stdout, "  Jet_Duration             = %14.7e Myr \n",       Jet_Duration*UNIT_T/Const_Myr                   );
      Aux_Message( stdout, "  ParticleMass             = %14.7e g\n",          ParticleMass                                    );
      Aux_Message( stdout, "  Jet_SrcVel               = %14.7e c\n",          Jet_SrcVel                                      );
      Aux_Message( stdout, "  Jet_SrcDens              = %14.7e g/cm^3\n",     Jet_SrcDens*UNIT_D                              );
@@ -675,6 +679,7 @@ void Interpolation_UM_IC( real x, real y, real z, real *Pri )
   }
 }
 
+#ifdef GRAVITY
 real IsothermalSlab_Pot(real z)
 {
   real Pot;
@@ -685,6 +690,7 @@ real IsothermalSlab_Pot(real z)
   
   return Pot;
 }
+#endif
 
 //-------------------------------------------------------------------------------------------------------
 // Function    :  SetGridIC
@@ -724,6 +730,7 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
    }
    else if ( Jet_Ambient == 2 )
    {
+#    ifdef GRAVITY
      if (fabs(zc) < interfaceHeight){
        Interpolation_UM_IC( xc, yc, zc, Pri);
        if(SRHD_CheckUnphysical( NULL, Pri, __FUNCTION__, __LINE__, true  )) {exit(0);}
@@ -759,6 +766,7 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
        Pri[4] = ambientDens*ambientTemperature;
        if(SRHD_CheckUnphysical( NULL, Pri, __FUNCTION__, __LINE__, true  )){exit(0);}
      }
+#  endif
    }
 
 
@@ -815,6 +823,8 @@ bool Flu_ResetByUser_Jets( real fluid[], const double x, const double y, const d
                                          const int lv, double AuxArray[] )
 {
   if ( Jet_Fire == 0 ) return false;
+
+  if ( Jet_Duration < Time ) return false;
 
   double xp[3], rp[3];
   double Prim[5], Cons[5], Vel[3];
