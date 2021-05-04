@@ -5,6 +5,7 @@
 #include "TestProb.h"
 
 void ***calloc_3d_array (size_t nt, size_t nr, size_t nc, size_t size);
+void free_3d_array(void ***array);
 void Mis_Cartesian2Spherical( const double Cartesian[], double Spherical[] );
 void CartesianRotate( double x[], double theta, double phi, bool inverse );
 void Interpolation_UM_IC( real x, real y, real z, real *Pri );
@@ -64,6 +65,9 @@ static real ambientTemperature;
 static real gasDiskTemperature;
 static real gasDiskPeakDens;
 
+// Dark logarithmic halo potential
+       real  v_halo;
+       real  distance_h;
 
 void Init_ExtPot_IsothermalSlab(); 
 
@@ -346,6 +350,13 @@ void SetParameter()
      IsothermalSlab_Center[0]          *= Const_kpc   / UNIT_L;
      IsothermalSlab_Center[1]          *= Const_kpc   / UNIT_L;
      IsothermalSlab_Center[2]          *= Const_kpc   / UNIT_L;
+ 
+     distance_h                         = Header[29];
+     v_halo                             = Header[30];
+
+     distance_h                        *= Const_kpc   / UNIT_L;
+     v_halo                            *= 1.0         / UNIT_V;
+  
 
      gasDiskPeakDens                   /= UNIT_D;
 
@@ -677,18 +688,34 @@ void Interpolation_UM_IC( real x, real y, real z, real *Pri )
 
     Pri[v] = TrilinearInterpolation(FieldAtVertices, xyz000, dxyz, xyz);
   }
+
+  //free_3d_array((void***)Rhoo);
+  //free_3d_array((void***)VelX);
+  //free_3d_array((void***)VelY);
+  //free_3d_array((void***)VelZ);
+  //free_3d_array((void***)Pres);
+  //free(X);
+  //free(Y);
+  //free(Z);
+  //free(buffer);
 }
 
 #ifdef GRAVITY
 real IsothermalSlab_Pot(real z)
 {
-  real Pot;
+  real Pot, Log;
+
+  // 1. isothermal slab
   Pot  = 2.0*M_PI*NEWTON_G*IsothermalSlab_PeakDens;
   Pot /= SQR(IsothermalSlab_VelocityDispersion);
   Pot  = log(cosh(z*sqrt(Pot)));
   Pot *= 2.0*SQR(IsothermalSlab_VelocityDispersion);
   
-  return Pot;
+  // 2. log potential
+  Log  = SQR(v_halo) * log(z*z + SQR(distance_h));
+  Log -= SQR(v_halo) * log(SQR(distance_h));
+
+  return Pot + Log;
 }
 #endif
 
@@ -764,6 +791,7 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
        Pri[2] = 0.0;
        Pri[3] = 0.0;
        Pri[4] = ambientDens*ambientTemperature;
+
        if(SRHD_CheckUnphysical( NULL, Pri, __FUNCTION__, __LINE__, true  )){exit(0);}
      }
 #  endif

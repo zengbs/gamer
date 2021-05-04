@@ -53,17 +53,12 @@ for (i = 1; i < nt; i++)
   return array;
 }
 
-/*! \fn void free_3d_array(void *array)
- *  *  \brief Free memory used by 3D array  */
-void free_3d_array(void *array)
-{
-  void ***ta = (void ***)array;
+void free_3d_array(void ***array){
 
-  free(ta[0][0]);
-  free(ta[0]);
+  free(array[0][0]);
+  free(array[0]);
   free(array);
 }
-
 
 real TrilinearInterpolation(real *FieldAtVertices, real *xyz000, real *dxyz, real *xyz)
 {

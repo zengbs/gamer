@@ -19,6 +19,9 @@ extern real IsothermalSlab_VelocityDispersion;
 extern real IsothermalSlab_PeakDens;
 extern real IsothermalSlab_Truncation;
 
+extern real distance_h;
+extern real v_halo;
+
 //-------------------------------------------------------------------------------------------------------
 // Function    :  SetExtPotAuxArray_IsothermalSlab
 // Description :  Set the auxiliary arrays ExtPot_AuxArray_Flt/Int[] used by ExtPot_IsothermalSlab()
@@ -37,11 +40,13 @@ void SetExtPotAuxArray_IsothermalSlab( double AuxArray_Flt[], int AuxArray_Int[]
    AuxArray_Flt[ 0] = IsothermalSlab_Center[0];                // x coordinate of the IsothermalSlab center
    AuxArray_Flt[ 1] = IsothermalSlab_Center[1];                // y ...
    AuxArray_Flt[ 2] = IsothermalSlab_Center[2];                // z ...
-   AuxArray_Flt[ 3] = IsothermalSlab_VelocityDispersion;        // 
-   AuxArray_Flt[ 4] = IsothermalSlab_PeakDens;           // 
+   AuxArray_Flt[ 3] = IsothermalSlab_VelocityDispersion;       // 
+   AuxArray_Flt[ 4] = IsothermalSlab_PeakDens;                 // 
    AuxArray_Flt[ 5] = NEWTON_G;
-   AuxArray_Flt[ 6] =  amr->BoxSize[2];
+   AuxArray_Flt[ 6] = amr->BoxSize[2];
    AuxArray_Flt[ 7] = IsothermalSlab_Truncation;
+   AuxArray_Flt[ 8] = distance_h;
+   AuxArray_Flt[ 9] = v_halo;
 
 } // FUNCTION : SetExtPotAuxArray_IsothermalSlab
 #endif // #ifndef __CUDACC__
@@ -85,6 +90,8 @@ static real ExtPot_IsothermalSlab( const double x, const double y, const double 
    const real   BoxSize_Z                         =       UserArray_Flt[ 6];
    const double dz                                = z - cz;
    const real   IsothermalSlab_Truncation         = (real)UserArray_Flt[ 7];   // 
+   const real   distance_h                        = (real)UserArray_Flt[ 8];
+   const real   v_halo                            = (real)UserArray_Flt[ 9];
 
    const double IsothermalSlab_VelocityDispersion_Sqr = SQR(IsothermalSlab_VelocityDispersion);
 
@@ -94,12 +101,20 @@ static real ExtPot_IsothermalSlab( const double x, const double y, const double 
    if ( cz != 0.5*BoxSize_Z ) Aux_Error( ERROR_INFO, "We expect the z-position of stellar disk is at box-center!\n"); 
 #  endif
 
-   if ( fabs(dz) > IsothermalSlab_Truncation )
-     stellarDiskPot = 2.0*IsothermalSlab_VelocityDispersion_Sqr*log(cosh(IsothermalSlab_Truncation*stellarDiskPot));
-   else
-     stellarDiskPot = 2.0*IsothermalSlab_VelocityDispersion_Sqr*log(cosh(dz*stellarDiskPot));
+   real LogPot;
 
-   return stellarDiskPot;
+   if ( fabs(dz) > IsothermalSlab_Truncation ){
+     stellarDiskPot = 2.0*IsothermalSlab_VelocityDispersion_Sqr*log(cosh(IsothermalSlab_Truncation*stellarDiskPot));
+     LogPot = SQR(v_halo) * log(SQR(IsothermalSlab_Truncation) + SQR(distance_h));
+   }
+   else{
+     stellarDiskPot = 2.0*IsothermalSlab_VelocityDispersion_Sqr*log(cosh(dz*stellarDiskPot));
+     LogPot = SQR(v_halo) * log(dz*dz + SQR(distance_h));
+   }
+
+   real TotPot = stellarDiskPot + LogPot;
+
+   return TotPot;
 
 } // FUNCTION : ExtPot_IsothermalSlab
 
