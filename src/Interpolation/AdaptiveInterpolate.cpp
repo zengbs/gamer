@@ -46,7 +46,6 @@ void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3]
               }
               else
               { 
-                 real IntMonoCoeff;
                  real Mono_Min = (real)0.0;
 
 //               adaptive IntMonoCoeff
@@ -68,10 +67,10 @@ void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3]
 
 																										  
 					  if(SRHD_CheckUnphysical( Cons, NULL, __FUNCTION__, __LINE__, false  ))
-                       {
-                          state = true;
-                          break; 
-                       } else state = false;
+                      {
+                        state = true;
+                        break; 
+                      }
                    }
               }
               else if ( itr == 0 )
@@ -82,9 +81,9 @@ void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3]
 
 					  if(SRHD_CheckUnphysical( NULL, Prim, __FUNCTION__, __LINE__, false  ))
                       {
-                         state = true;
-                         break; 
-                      } else state = false;
+                        state = true;
+                        break; 
+                      }
                   }
               }
            
