@@ -39,7 +39,7 @@ extern void Hydro_RiemannSolver_HLLC( const int XYZ, real Flux_Out[], const real
                                       const EoS_DP2C_t EoS_DensPres2CSqr, const EoS_GUESS_t EoS_GuessHTilde,
                                       const EoS_H2TEM_t EoS_HTilde2Temp, const EoS_TEM2C_t EoS_Temper2CSqr,
                                       const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
-                                      const real* const EoS_Table[EOS_NTABLE_MAX] );
+                                      const real* const EoS_Table[EOS_NTABLE_MAX], bool *State );
 extern void Hydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In[], const real R_In[],
                                       const real MinDens, const real MinPres, const EoS_DE2P_t EoS_DensEint2Pres,
                                       const EoS_DP2C_t EoS_DensPres2CSqr, const EoS_GUESS_t EoS_GuessHTilde,
@@ -594,11 +594,11 @@ void CorrectUnphysical( const int lv, const int NPG, const int *PID0_List,
                         Hydro_RiemannSolver_HLLC( d, FluxL[d], VarL[d], VarC,    MIN_DENS, MIN_PRES,
                                                   EoS_DensEint2Pres_CPUPtr, EoS_DensPres2CSqr_CPUPtr,
                                                   EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_Temper2CSqr_CPUPtr,
-                                                  EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table );
+                                                  EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table, NULL );
                         Hydro_RiemannSolver_HLLC( d, FluxR[d], VarC,    VarR[d], MIN_DENS, MIN_PRES,
                                                   EoS_DensEint2Pres_CPUPtr, EoS_DensPres2CSqr_CPUPtr,
                                                   EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_Temper2CSqr_CPUPtr,
-                                                  EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table );
+                                                  EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table, NULL );
                      }
                      break;
 #                 endif
@@ -709,11 +709,11 @@ void CorrectUnphysical( const int lv, const int NPG, const int *PID0_List,
                               Hydro_RiemannSolver_HLLC( d, FluxL_1D, Corr1D_InOut_PtrL, Corr1D_InOut_PtrC, MIN_DENS, MIN_PRES,
                                                         EoS_DensEint2Pres_CPUPtr, EoS_DensPres2CSqr_CPUPtr,
                                                         EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_Temper2CSqr_CPUPtr,
-                                                        EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table );
+                                                        EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table, NULL );
                               Hydro_RiemannSolver_HLLC( d, FluxR_1D, Corr1D_InOut_PtrC, Corr1D_InOut_PtrR, MIN_DENS, MIN_PRES,
                                                         EoS_DensEint2Pres_CPUPtr, EoS_DensPres2CSqr_CPUPtr,
                                                         EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_Temper2CSqr_CPUPtr,
-                                                        EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table );
+                                                        EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table, NULL );
                            break;
 #                          endif
 

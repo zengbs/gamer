@@ -68,7 +68,8 @@ GPU_DEVICE
 static void Hydro_HancockPredict( real fcCon[][NCOMP_LR], real fcPri[][NCOMP_LR], const real dt, const real dh,
                                   const real g_cc_array[][ CUBE(FLU_NXT) ], const int cc_idx,
                                   const real MinDens, const real MinPres, const real MinEint,
-                                  const EoS_DE2P_t EoS_DensEint2Pres, const double EoS_AuxArray_Flt[],
+                                  const EoS_DE2P_t EoS_DensEint2Pres, const EoS_GUESS_t EoS_GuessHTilde,
+                                  const EoS_H2TEM_t EoS_HTilde2Temp, const double EoS_AuxArray_Flt[],
                                   const int EoS_AuxArray_Int[], const real *const EoS_Table[EOS_NTABLE_MAX] );
 #endif
 #ifdef CHAR_RECONSTRUCTION
@@ -638,15 +639,24 @@ void Hydro_DataReconstruction( const real g_ConVar   [][ CUBE(FLU_NXT) ],
 #     if ( FLU_SCHEME == MHM )
 //    7. advance the face-centered variables by half time-step for the MHM integrator
       Hydro_HancockPredict( fcCon, fcPri, dt, dh, g_ConVar, idx_cc, MinDens, MinPres, MinEint,
-                            EoS_DensEint2Pres, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
+                            EoS_DensEint2Pres, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
 #     endif
 
 
 //    8. store the face-centered values to the output array
 //       --> use NCOMP_TOTAL_PLUS_MAG instead of LR_EINT since we don't need to store internal energy in g_FC_Var[]
       for (int f=0; f<6; f++)
-      for (int v=0; v<NCOMP_TOTAL_PLUS_MAG; v++)
-         g_FC_Var[f][v][idx_fc] = fcCon[f][v];
+      {
+        for (int v=0; v<NCOMP_TOTAL_PLUS_MAG; v++)
+        {
+           g_FC_Var[f][v][idx_fc] = fcCon[f][v];
+        }
+#       ifdef CHECK_FAILED_CELL_IN_FLUID
+        SRHD_CheckUnphysical( fcCon[f], NULL, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int,
+                              EoS_Table, __FUNCTION__, __LINE__, true );
+
+#       endif
+      }
    } // CGPU_LOOP( idx_fc, CUBE(N_FC_VAR) )
 
 
@@ -1938,7 +1948,8 @@ GPU_DEVICE
 void Hydro_HancockPredict( real fcCon[][NCOMP_LR], real fcPri[][NCOMP_LR], const real dt, const real dh,
                            const real g_cc_array[][ CUBE(FLU_NXT) ], const int cc_idx,
                            const real MinDens, const real MinPres, const real MinEint,
-                           const EoS_DE2P_t EoS_DensEint2Pres, const double EoS_AuxArray_Flt[],
+                           const EoS_DE2P_t EoS_DensEint2Pres, const EoS_GUESS_t EoS_GuessHTilde,
+                           const EoS_H2TEM_t EoS_HTilde2Temp, const double EoS_AuxArray_Flt[],
                            const int EoS_AuxArray_Int[], const real *const EoS_Table[EOS_NTABLE_MAX] )
 {
 
@@ -1974,15 +1985,26 @@ void Hydro_HancockPredict( real fcCon[][NCOMP_LR], real fcPri[][NCOMP_LR], const
 #     ifdef BAROTROPIC_EOS
       if ( fcCon[f][0] <= (real)0.0 )
 #     elif ( defined SRHD )
-      if ( SRHD_CheckUnphysical( fcCon[f], NULL, __FUNCTION__, __LINE__, false ) )
+      if (SRHD_CheckUnphysical( fcCon[f], NULL, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int,
+                              EoS_Table, __FUNCTION__, __LINE__, false ) )
 #     else
       if ( fcCon[f][0] <= (real)0.0  ||  fcCon[f][4] <= (real)0.0 )
 #     endif
       {
 //       set to the cell-centered values before update
          for (int f=0; f<6; f++)
-         for (int v=0; v<NCOMP_TOTAL; v++)
-            fcCon[f][v] = g_cc_array[v][cc_idx];
+         {
+           for (int v=0; v<NCOMP_TOTAL; v++)
+           {
+              fcCon[f][v] = g_cc_array[v][cc_idx];
+           }
+
+#          ifdef CHECK_FAILED_CELL_IN_FLUID
+           SRHD_CheckUnphysical( fcCon[f], NULL, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int,
+                                 EoS_Table, __FUNCTION__, __LINE__, true );
+#          endif
+         }
+
 
          break;
       }

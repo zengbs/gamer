@@ -1057,9 +1057,7 @@ void Output_DumpData_Total_HDF5( const char *FileName )
 	              Cons[2] = MomY[PID][i][j][k];
 	              Cons[3] = MomZ[PID][i][j][k];
 	              Cons[4] = Engy[PID][i][j][k];
-#                 ifdef CHECK_FAILED_CELL_IN_FLUID
-	              if(SRHD_CheckUnphysical(Cons, NULL, __FUNCTION__, __LINE__, true)) exit(EXIT_FAILURE);
-#                 endif
+
                   Temp[PID][i][j][k] =  Hydro_Con2Temp( Cons[0], Cons[1], Cons[2], Cons[3], Cons[4], 
                                                         NULL, NULL_BOOL, NULL_REAL, NULL_REAL, NULL,
                                                         EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr,

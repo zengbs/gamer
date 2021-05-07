@@ -666,14 +666,14 @@ void Interpolation_UM_IC( real x, real y, real z, real *Pri )
 
   bool Unphy = false;
 
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex000, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex001, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex010, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex100, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex011, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex101, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex110, __FUNCTION__, __LINE__, true  );  
-  Unphy |= SRHD_CheckUnphysical( NULL, Vertex111, __FUNCTION__, __LINE__, true  );  
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex000, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  );
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex001, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  );
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex010, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  );
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex100, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  );
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex011, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  );
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex110, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  );
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex101, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  );
+  Unphy |= SRHD_CheckUnphysical( NULL, Vertex111, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  );
 
   if (Unphy){
     printf("Idx=%d, Jdx=%d, Kdx=%d\n", Idx, Jdx, Kdx);
@@ -760,7 +760,10 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
 #    ifdef GRAVITY
      if (fabs(zc) < interfaceHeight){
        Interpolation_UM_IC( xc, yc, zc, Pri);
-       if(SRHD_CheckUnphysical( NULL, Pri, __FUNCTION__, __LINE__, true  )) {exit(0);}
+
+       if ( SRHD_CheckUnphysical( NULL, Pri,
+                                  EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt,                              
+                                  EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  ) ) exit(0);
      }
      else{
 
@@ -792,7 +795,9 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
        Pri[3] = 0.0;
        Pri[4] = ambientDens*ambientTemperature;
 
-       if(SRHD_CheckUnphysical( NULL, Pri, __FUNCTION__, __LINE__, true  )){exit(0);}
+       if ( SRHD_CheckUnphysical( NULL, Pri,
+                                  EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt,                              
+                                  EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  ) ) exit(0);
      }
 #  endif
    }

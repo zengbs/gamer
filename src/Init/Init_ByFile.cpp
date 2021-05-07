@@ -416,7 +416,8 @@ void Init_ByFile_AssignData( const char UM_Filename[], const int UM_lv, const in
 #                 if( MODEL == HYDRO )
 //                check unphysical result
 #                 ifdef SRHD
-                  SRHD_CheckUnphysical( fluid_out, NULL, __FUNCTION__, __LINE__, true );
+                  SRHD_CheckUnphysical( fluid_out, NULL, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt,
+                                        EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  );
 #                 endif
 //                modify the initial condition if required
                   if ( OPT__RESET_FLUID )

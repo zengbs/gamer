@@ -227,7 +227,7 @@ void Flu_FixUp_Flux( const int lv )
 
 #              if   ( MODEL == HYDRO )
 #              ifdef SRHD
-               if ( SRHD_CheckUnphysical( CorrVal, NULL,  __FUNCTION__, __LINE__, true  ) )
+               if ( SRHD_CheckUnphysical( CorrVal, NULL, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  ) )
 #              else
                if ( CorrVal[DENS] <= MIN_DENS
 #                   ifndef BAROTROPIC_EOS

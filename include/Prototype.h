@@ -117,8 +117,12 @@ double Hydro_Temp2Pres( const double Dens, const double Temp, const double mu, c
 real Hydro_CheckMinPres( const real InPres, const real MinPres );
 real Hydro_CheckMinEint( const real InEint, const real MinEint );
 bool Hydro_CheckNegative( const real Input );
-bool SRHD_CheckUnphysical( const real Con[], const real Pri[], const char s[], const int line, bool show );
 void Hydro_NormalizePassive( const real GasDens, real Passive[], const int NNorm, const int NormIdx[] );
+bool SRHD_CheckUnphysical( const real Con[], const real Pri[],
+                           const EoS_GUESS_t EoS_GuessHTilde, const EoS_H2TEM_t EoS_HTilde2Temp,
+                           const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
+                           const real *const EoS_Table[EOS_NTABLE_MAX],
+                           const char FunctionName[], const int Line, bool Show );
 #ifdef SRHD
 real SRHD_Con2HTilde( const real Con[], const EoS_GUESS_t EoS_GuessHTilde, const EoS_H2TEM_t EoS_HTilde2Temp,
                       const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],

@@ -36,12 +36,12 @@ void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3]
                  { 
                    for (int v = 0 ; v < NCOMP_FLUID ;v++) Cons[v] = CData[CSize3D*v+i];
 
-                   Hydro_Con2Pri( Cons, Prim, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL,                               
+                   Hydro_Con2Pri( Cons, Prim, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL,
                                   (real)NULL_REAL, EoS_DensEint2Pres_CPUPtr, EoS_DensPres2Eint_CPUPtr,
                                   EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt,
                                   EoS_AuxArray_Int, h_EoS_Table, NULL, NULL ); 
                                                                                                        
-                   for (int v = 0 ; v < NCOMP_FLUID ;v++) CData[CSize3D*v+i] = Prim[v];      
+                   for (int v = 0 ; v < NCOMP_FLUID ;v++) CData[CSize3D*v+i] = Prim[v];
                  }
               }
               else
@@ -66,7 +66,7 @@ void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3]
                       for (int v = 0 ; v < NCOMP_FLUID ;v++) Cons[v] = FData[FSize3D*v+i];
 
 																										  
-					  if(SRHD_CheckUnphysical( Cons, NULL, __FUNCTION__, __LINE__, false  ))
+                      if ( SRHD_CheckUnphysical( Cons, NULL, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, false  ) )
                       {
                         state = true;
                         break; 
@@ -79,7 +79,7 @@ void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3]
                   {
                      for (int v = 0 ; v < NCOMP_FLUID ;v++) Prim[v] = FData[FSize3D*v+i];
 
-					  if(SRHD_CheckUnphysical( NULL, Prim, __FUNCTION__, __LINE__, false  ))
+                      if ( SRHD_CheckUnphysical( NULL, Prim, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, false  ) )
                       {
                         state = true;
                         break; 
@@ -122,11 +122,11 @@ void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3]
        {
           for (int v = 0 ; v < NCOMP_FLUID ;v++) Cons[v] = FData[FSize3D*v+i];
 
-	      if(SRHD_CheckUnphysical( Cons, NULL, __FUNCTION__, __LINE__, true  ))
-           {
-             printf("itr=%d\n", itr);
-             exit(EXIT_FAILURE);
-           }
+          if ( SRHD_CheckUnphysical( Cons, NULL, EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  ) )
+          {
+            printf("itr=%d\n", itr);
+            exit(EXIT_FAILURE);
+          }
        }
      }
 #    endif

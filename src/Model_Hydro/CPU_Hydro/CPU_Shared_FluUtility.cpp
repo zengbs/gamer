@@ -41,7 +41,11 @@ void SRHD_HTildeFunction (real HTilde, real MSqr_DSqr, real Temp, real Constant,
                           const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
                           const real *const EoS_Table[EOS_NTABLE_MAX] );
 GPU_DEVICE
-bool SRHD_CheckUnphysical( const real Con[], const real Pri[], const char s[], const int line, bool show );
+bool SRHD_CheckUnphysical( const real Con[], const real Pri[],
+                           const EoS_GUESS_t EoS_GuessHTilde, const EoS_H2TEM_t EoS_HTilde2Temp,
+                           const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
+                           const real *const EoS_Table[EOS_NTABLE_MAX],
+                           const char FunctionName[], const int Line, bool Show );
 #endif
 #endif
 
@@ -54,6 +58,8 @@ void  NewtonRaphsonSolver(void (*FunPtr)(real, real, real, real, const EoS_H2TEM
 GPU_DEVICE
 real VectorDotProduct( real V1, real V2, real V3 );
 
+GPU_DEVICE
+void Swap(real *a, real *b);
 
 
 
@@ -219,7 +225,10 @@ void Hydro_Con2Pri( const real In[], real Out[], const real MinPres,
 #  ifdef SRHD
    real HTilde, Factor, Temp, AAA;
    real *LorentzFactor = &AAA;
-   SRHD_CheckUnphysical( In, NULL, __FUNCTION__, __LINE__, true  );
+
+   SRHD_CheckUnphysical( In, NULL, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int,
+                         EoS_Table, __FUNCTION__, __LINE__, true );
+
    HTilde = SRHD_Con2HTilde( In, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
 
 
@@ -236,7 +245,9 @@ void Hydro_Con2Pri( const real In[], real Out[], const real MinPres,
    Out[0] = In[0]/ *LorentzFactor;
 
    EoS_HTilde2Temp( HTilde, &Temp, NULL, NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
+
    Out[4] = Out[0]*Temp;
+ 
 #  else
    Out[0] = In[0];
    Out[1] = In[1]*_Rho;
@@ -245,13 +256,13 @@ void Hydro_Con2Pri( const real In[], real Out[], const real MinPres,
    Out[4] = Hydro_Con2Pres( In[0], In[1], In[2], In[3], In[4], In+NCOMP_FLUID, CheckMinPres_Yes, MinPres, Emag,
                             EoS_DensEint2Pres, NULL, NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, EintOut );
 
-
 // pressure floor required to resolve the Jeans length
 // --> note that currently we do not modify the dual-energy variable (e.g., entropy) accordingly
    if ( JeansMinPres )
    {
       const real Pres0 = Out[4];
       Out[4] = Hydro_CheckMinPres( Pres0, JeansMinPres_Coeff*SQR(Out[0]) );
+
 
 //    recompute internal energy to be consistent with the updated pressure
       if ( EintOut != NULL  &&  Out[4] != Pres0 )
@@ -358,7 +369,6 @@ void Hydro_Pri2Con( const real In[], real Out[], const bool NormPassive, const i
    Out[4]  = MSqr_DSqr + HTildeFunction;
    Out[4] /= (real)1.0 + SQRT( (real)1.0 + MSqr_DSqr + HTildeFunction );
    Out[4] *= Out[0];
-   SRHD_CheckUnphysical( Out, NULL, __FUNCTION__, __LINE__, true  );
 #  else
    Out[0] = In[0];
    Out[1] = In[0]*In[1];
@@ -466,7 +476,7 @@ void Hydro_Con2Flux( const int XYZ, real Flux[], const real In[], const real Min
                                                             CheckMinPres_Yes, MinPres, Emag,
                                                             EoS_DensEint2Pres, NULL, NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int,
                                                             EoS_Table, NULL )
-                                        : AuxArray[0];
+                                          : AuxArray[0];
    const real _Rho = (real)1.0 / InRot[0];
    const real Vx   = _Rho*InRot[1];
 
@@ -606,10 +616,13 @@ real SRHD_Con2KineticEngy( real Con[], const EoS_GUESS_t EoS_GuessHTilde, const 
 //                Show          : Print unphysical result in log or not
 //-------------------------------------------------------------------------------------------------------
 GPU_DEVICE
-bool SRHD_CheckUnphysical( const real Con[], const real Pri[], const char FunctionName[], const int Line, bool Show )
+bool SRHD_CheckUnphysical( const real Con[], const real Pri[],
+                           const EoS_GUESS_t EoS_GuessHTilde, const EoS_H2TEM_t EoS_HTilde2Temp,
+                           const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
+                           const real *const EoS_Table[EOS_NTABLE_MAX],
+                           const char FunctionName[], const int Line, bool Show )
 {
    real discriminant;
-   real Msqr, M, E_D, M_D;
 
 
 //--------------------------------------------------------------//
@@ -631,20 +644,52 @@ bool SRHD_CheckUnphysical( const real Con[], const real Pri[], const char Functi
          || (real) -HUGE_NUMBER >= Con[MOMZ] || Con[MOMZ]  >= (real)HUGE_NUMBER
          || (real)  TINY_NUMBER >= Con[ENGY] || Con[ENGY]  >= (real)HUGE_NUMBER )       goto FAIL;
 
+      real Con_Sort[NCOMP_FLUID];
+                              
+      for (int v=0;v<NCOMP_TOTAL;v++) Con_Sort[v] = Con[v];
+                              
+      // sorting momentum  
+      if (Con_Sort[1]>Con_Sort[3]) Swap(&Con_Sort[1], &Con_Sort[3]);
+      if (Con_Sort[1]>Con_Sort[2]) Swap(&Con_Sort[1], &Con_Sort[2]);
+      if (Con_Sort[2]>Con_Sort[3]) Swap(&Con_Sort[2], &Con_Sort[3]);
 
 // check minimum energy
-      Msqr = VectorDotProduct( Con[MOMX], Con[MOMY], Con[MOMZ] );
-      M = SQRT( Msqr );
-	  E_D = Con[ENGY] / Con[DENS];
-	  M_D = M / Con[DENS];
+      real Msqr = VectorDotProduct( Con_Sort[MOMX], Con_Sort[MOMY], Con_Sort[MOMZ] );
+
+      real Dsqr = SQR(Con[0]);
+      real abc = (real)1.0 / Dsqr;
+      real E_D = Con[4] / Con[0];
+      real M_Dsqr = abc * Msqr;
+      real M_D = SQRT( M_Dsqr );
+                              
+                              
+      // (x+y)(x-y) is more accurate than x**2-y**2
+      real X = SQRT( E_D*E_D + (real)2.0*E_D );
+      real Y = X + M_D;       
+      real Z = X - M_D;       
+      real discriminant = Y * Z;   
+
+
 #     ifdef REDUCED_ENERGY
-      discriminant = ( E_D + M_D ) * ( E_D - M_D ) + (real)2.0 * E_D;
       if ( discriminant <= TINY_NUMBER )                                                goto FAIL;
 #     else
       discriminant = ( ( SQR( Con[ENGY] ) -  Msqr ) / SQR ( Con[DENS] ) );
       if ( discriminant <= 1.0   )                                                      goto FAIL;
 #     endif
 
+// check root
+      real HTilde;
+      HTilde = SRHD_Con2HTilde( Con, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
+      if ( HTilde != HTilde 
+        || HTilde <= (real)TINY_NUMBER 
+        || HTilde >= (real)HUGE_NUMBER )                                                goto FAIL;
+
+// check temperature
+      real Temp;
+      EoS_HTilde2Temp( HTilde, &Temp, NULL, NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
+      if ( Temp != Temp 
+        || Temp <= (real)TINY_NUMBER 
+        || Temp >= (real)HUGE_NUMBER )                                                  goto FAIL;
 
 
 // pass all checks
@@ -1274,6 +1319,15 @@ real VectorDotProduct( real V1, real V2, real V3 )
   return Product;
 }
 
+GPU_DEVICE
+void Swap(real *a, real *b)
+{
+  real Temp;
+
+  Temp = *b;
+  *b = *a;
+  *a = Temp;
+}
 #endif // #if ( MODEL == HYDRO )
 
 

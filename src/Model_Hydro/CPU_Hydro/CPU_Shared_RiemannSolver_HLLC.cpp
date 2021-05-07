@@ -56,7 +56,7 @@ void Hydro_RiemannSolver_HLLC( const int XYZ, real Flux_Out[], const real L_In[]
                                const real MinDens, const real MinPres, const EoS_DE2P_t EoS_DensEint2Pres,
                                const EoS_DP2C_t EoS_DensPres2CSqr, const EoS_GUESS_t EoS_GuessHTilde, 
                                const EoS_H2TEM_t EoS_HTilde2Temp, const EoS_TEM2C_t EoS_Temper2CSqr,
-                               const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[], const real* const EoS_Table[EOS_NTABLE_MAX] )
+                               const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[], const real* const EoS_Table[EOS_NTABLE_MAX], bool *State )
 {
 
 // 1. reorder the input variables for different spatial directions
@@ -77,185 +77,192 @@ void Hydro_RiemannSolver_HLLC( const int XYZ, real Flux_Out[], const real L_In[]
    real Usl[NCOMP_TOTAL], Usr[NCOMP_TOTAL];
    real cslsq, csrsq, gammasql, gammasqr;
    real ssl, ssr, lmdapl, lmdapr, lmdaml, lmdamr, lmdatlmda;
-   real lmdal,lmdar; /* Left and Right wave speeds */
-   real lmdas; /* Contact wave speed */
+   real lmdal,lmdar;     /* Left and Right wave speeds */
+   real lmdas;           /* Contact wave speed */
    real a,b,c;
-   real den,ps; /* Pressure in inner region */
+   real den,ps;          /* Pressure in inner region */
    real lV1, rV1, lV2, rV2, lV3, rV3;
    real lFactor,rFactor; /* Lorentz factor */
 
+#  ifdef CHECK_FAILED_CELL_IN_FLUID
+   SRHD_CheckUnphysical( L,    NULL, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, __FUNCTION__, __LINE__, true );
+   SRHD_CheckUnphysical( R,    NULL, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, __FUNCTION__, __LINE__, true );
+   SRHD_CheckUnphysical( L_In, NULL, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, __FUNCTION__, __LINE__, true );
+   SRHD_CheckUnphysical( R_In, NULL, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, __FUNCTION__, __LINE__, true );
+#  endif
 
-/*  1. compute primitive vars. from conserved vars. */
-    Hydro_Con2Pri (L, PL, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL, 
+
+/* 1. compute primitive vars. from conserved vars. */
+   Hydro_Con2Pri( L, PL, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL, 
+                 (real)NULL_REAL, NULL, NULL, EoS_GuessHTilde, EoS_HTilde2Temp,
+                 EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL, &lFactor );
+
+   Hydro_Con2Pri( R, PR, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL,
                   (real)NULL_REAL, NULL, NULL, EoS_GuessHTilde, EoS_HTilde2Temp,
-                  EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL, &lFactor );
+                 EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL, &rFactor );
 
-    Hydro_Con2Pri (R, PR, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL,
-                   (real)NULL_REAL, NULL, NULL, EoS_GuessHTilde, EoS_HTilde2Temp,
-                  EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL, &rFactor );
+#  ifdef CHECK_FAILED_CELL_IN_FLUID
+   SRHD_CheckUnphysical( NULL, PL, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, __FUNCTION__, __LINE__, true );
+   SRHD_CheckUnphysical( NULL, PR, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, __FUNCTION__, __LINE__, true );
+#  endif
 
-#   ifdef CHECK_FAILED_CELL_IN_FLUID
-    SRHD_CheckUnphysical(NULL, PL, __FUNCTION__, __LINE__, true);
-    SRHD_CheckUnphysical(NULL, PR, __FUNCTION__, __LINE__, true);
-#   endif
+/* 2. Transform 4-velocity to 3-velocity */
+   lV1=PL[1]/lFactor;
+   lV2=PL[2]/lFactor;
+   lV3=PL[3]/lFactor;
 
-/*  2. Transform 4-velocity to 3-velocity */
-    lV1=PL[1]/lFactor;
-    lV2=PL[2]/lFactor;
-    lV3=PL[3]/lFactor;
-
-    rV1=PR[1]/rFactor;
-    rV2=PR[2]/rFactor;
-    rV3=PR[3]/rFactor;
+   rV1=PR[1]/rFactor;
+   rV2=PR[2]/rFactor;
+   rV3=PR[3]/rFactor;
 
 
 
-/*  3. Compute the max and min wave speeds used in Mignone */
-    cslsq = EoS_Temper2CSqr( PL[0], PL[4], NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
-    csrsq = EoS_Temper2CSqr( PR[0], PR[4], NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
+/* 3. Compute the max and min wave speeds used in Mignone */
+   cslsq = EoS_Temper2CSqr( PL[0], PL[4], NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
+   csrsq = EoS_Temper2CSqr( PR[0], PR[4], NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
 
-#   ifdef CHECK_FAILED_CELL_IN_FLUID
-    if ( cslsq >= 1.0 || csrsq >= 1.0 || cslsq < 0.0 || csrsq < 0.0 )
-      printf( "cslsq=%10.7e, cslrq=%10.7e\n", cslsq, csrsq);
-#   endif
+#  ifdef CHECK_FAILED_CELL_IN_FLUID
+   if ( cslsq >= 1.0 || csrsq >= 1.0 || cslsq < 0.0 || csrsq < 0.0 )
+     printf( "cslsq=%10.7e, cslrq=%10.7e\n", cslsq, csrsq);
+#  endif
 
 
-//  square of Lorentz factor
-    gammasql = SQR(lFactor);
-    gammasqr = SQR(rFactor);
+// square of Lorentz factor
+   gammasql = SQR(lFactor);
+   gammasqr = SQR(rFactor);
 
-    ssl = cslsq / FMA( - gammasql, cslsq, gammasql ); /* Mignone Eq 22.5 */
-    ssr = csrsq / FMA( - gammasqr, csrsq, gammasqr ); /* Mignone Eq 22.5 */
+   ssl = cslsq / FMA( - gammasql, cslsq, gammasql ); /* Mignone Eq 22.5 */
+   ssr = csrsq / FMA( - gammasqr, csrsq, gammasqr ); /* Mignone Eq 22.5 */
 
-#   ifdef CHECK_FAILED_CELL_IN_FLUID
-    if ( ( ssl < (real)0.0 ) || ( ssr < (real)0.0 ) ) printf("ssl = %14.7e, ssr = %14.7e\n", ssl, ssr);
-#   endif
+#  ifdef CHECK_FAILED_CELL_IN_FLUID
+   if ( ( ssl < (real)0.0 ) || ( ssr < (real)0.0 ) ) printf("ssl = %14.7e, ssr = %14.7e\n", ssl, ssr);
+#  endif
 
-    real lV2s = lV2*lV2;
-    real rV2s = rV2*rV2;
+   real lV2s = lV2*lV2;
+   real rV2s = rV2*rV2;
 
-    real lV3s = lV3*lV3;
-    real rV3s = rV3*rV3;
+   real lV3s = lV3*lV3;
+   real rV3s = rV3*rV3;
  
-    real __gammasql = (real)1.0 / gammasql;
-    real __gammasqr = (real)1.0 / gammasqr;
+   real __gammasql = (real)1.0 / gammasql;
+   real __gammasqr = (real)1.0 / gammasqr;
 
-    real deltal = ssl*ssl + ssl*( __gammasql + lV2s + lV3s );
-    real deltar = ssr*ssr + ssr*( __gammasqr + rV2s + rV3s );
+   real deltal = ssl*ssl + ssl*( __gammasql + lV2s + lV3s );
+   real deltar = ssr*ssr + ssr*( __gammasqr + rV2s + rV3s );
 
-    real ssl__ = (real)1.0 + ssl;
-    real ssr__ = (real)1.0 + ssr;
+   real ssl__ = (real)1.0 + ssl;
+   real ssr__ = (real)1.0 + ssr;
 
 
-    lmdapl = ( lV1 + SQRT(deltal) ) / ssl__ ;
-    lmdaml = ( lV1 - SQRT(deltal) ) / ssl__ ;
+   lmdapl = ( lV1 + SQRT(deltal) ) / ssl__ ;
+   lmdaml = ( lV1 - SQRT(deltal) ) / ssl__ ;
 
-    lmdapr = ( rV1 + SQRT(deltar) ) / ssr__ ;
-    lmdamr = ( rV1 - SQRT(deltar) ) / ssr__ ;
+   lmdapr = ( rV1 + SQRT(deltar) ) / ssr__ ;
+   lmdamr = ( rV1 - SQRT(deltar) ) / ssr__ ;
 
-    lmdal = FMIN(lmdaml, lmdamr); /* Mignone Eq 21 */
-    lmdar = FMAX(lmdapl, lmdapr);
+   lmdal = FMIN(lmdaml, lmdamr); /* Mignone Eq 21 */
+   lmdar = FMAX(lmdapl, lmdapr);
 
-/*  4. compute HLL flux using Mignone Eq 11 (necessary for computing lmdas (Eq 18) 
- *     compute HLL conserved quantities using Mignone eq 9
- *  */
-    Fl[0] = L[0] * lV1;
-    Fl[1] = FMA( L[1], lV1, PL[4] );
-    Fl[2] = L[2] * lV1;
-    Fl[3] = L[3] * lV1;
-#   ifdef REDUCED_ENERGY
-    Fl[4] = ( L[4] + PL[4] ) * lV1;
-#   else
-    Fl[4] = L[1];
-#   endif
+/* 4. compute HLL flux using Mignone Eq 11 (necessary for computing lmdas (Eq 18) 
+ *    compute HLL conserved quantities using Mignone eq 9
+ * */
+   Fl[0] = L[0] * lV1;
+   Fl[1] = FMA( L[1], lV1, PL[4] );
+   Fl[2] = L[2] * lV1;
+   Fl[3] = L[3] * lV1;
+#  ifdef REDUCED_ENERGY
+   Fl[4] = ( L[4] + PL[4] ) * lV1;
+#  else
+   Fl[4] = L[1];
+#  endif
 
-    if( lmdal >= (real)0.0)
-    { /* Fl */
-      /* intercell flux is left flux */
-      Flux_Out[0] = Fl[0];
-      Flux_Out[1] = Fl[1];
-      Flux_Out[2] = Fl[2];
-      Flux_Out[3] = Fl[3];
-      Flux_Out[4] = Fl[4];
+   if( lmdal >= (real)0.0)
+   { /* Fl */
+     /* intercell flux is left flux */
+     Flux_Out[0] = Fl[0];
+     Flux_Out[1] = Fl[1];
+     Flux_Out[2] = Fl[2];
+     Flux_Out[3] = Fl[3];
+     Flux_Out[4] = Fl[4];
 
-      Hydro_Rotate3D( Flux_Out, XYZ, false, MAG_OFFSET  );
-      return;
-    }
+     Hydro_Rotate3D( Flux_Out, XYZ, false, MAG_OFFSET  );
+     return;
+   }
 
-    Fr[0] = R[0] * rV1;
-    Fr[1] = FMA( R[1], rV1, PR[4] );
-    Fr[2] = R[2] * rV1;
-    Fr[3] = R[3] * rV1;
-#   ifdef REDUCED_ENERGY
-    Fr[4] = ( R[4] + PR[4] ) * rV1;
-#   else
-    Fr[4] = R[1];
-#   endif
+   Fr[0] = R[0] * rV1;
+   Fr[1] = FMA( R[1], rV1, PR[4] );
+   Fr[2] = R[2] * rV1;
+   Fr[3] = R[3] * rV1;
+#  ifdef REDUCED_ENERGY
+   Fr[4] = ( R[4] + PR[4] ) * rV1;
+#  else
+   Fr[4] = R[1];
+#  endif
 
-    if( lmdar <= (real)0.0 )
-    { /* Fr */
-      /* intercell flux is right flux */
-      Flux_Out[0] = Fr[0];
-      Flux_Out[1] = Fr[1];
-      Flux_Out[2] = Fr[2];
-      Flux_Out[3] = Fr[3];
-      Flux_Out[4] = Fr[4];
+   if( lmdar <= (real)0.0 )
+   { /* Fr */
+     /* intercell flux is right flux */
+     Flux_Out[0] = Fr[0];
+     Flux_Out[1] = Fr[1];
+     Flux_Out[2] = Fr[2];
+     Flux_Out[3] = Fr[3];
+     Flux_Out[4] = Fr[4];
 
-      Hydro_Rotate3D( Flux_Out, XYZ, false, MAG_OFFSET  );
-      return;
-    }
+     Hydro_Rotate3D( Flux_Out, XYZ, false, MAG_OFFSET  );
+     return;
+   }
 
 
 /* 6. Compute contact wave speed using larger root from Mignone Eq 18
- *    Physical root is the root with the minus sign
+ *   Physical root is the root with the minus sign
  */
-    lmdatlmda = lmdal*lmdar; 
+   lmdatlmda = lmdal*lmdar; 
 
   /* quadratic formuLa calcuLation */
-#   ifdef REDUCED_ENERGY
-    a = lmdar * L[1] 
-      - lmdal * R[1] 
-  	  + lmdatlmda*( R[4] + R[0] - L[4] - L[0] );
-#   else
-    a = lmdar * ( L[1] )
-      - lmdal * ( R[1] )
-	  + lmdatlmda*( R[4] - L[4] );
-#   endif
+#  ifdef REDUCED_ENERGY
+   a = lmdar * L[1] 
+     - lmdal * R[1] 
+     + lmdatlmda*( R[4] + R[0] - L[4] - L[0] );
+#  else
+   a = lmdar * ( L[1] )
+     - lmdal * ( R[1] )
+     + lmdatlmda*( R[4] - L[4] );
+#  endif
 
-#   ifdef REDUCED_ENERGY
-    b = lmdal * ( L[4] + L[0] ) - L[1]
-      - lmdar * ( R[4] + R[0] ) + R[1]
-      + lmdal * ( R[1]*rV1 + PR[4] )
-      - lmdar * ( L[1]*lV1 + PL[4] )
-      - lmdatlmda*( R[1] - L[1] );
-#   else
-    b = lmdal * ( L[4] ) - ( L[1] )
-      - lmdar * ( R[4] ) + ( R[1] )
-      + lmdal * ( R[1]*rV1 + PR[4] )
-      - lmdar * ( L[1]*lV1 + PL[4] )
-      - lmdatlmda*( R[1] - L[1] );
-#   endif
+#  ifdef REDUCED_ENERGY
+   b = lmdal * ( L[4] + L[0] ) - L[1]
+     - lmdar * ( R[4] + R[0] ) + R[1]
+     + lmdal * ( R[1]*rV1 + PR[4] )
+     - lmdar * ( L[1]*lV1 + PL[4] )
+     - lmdatlmda*( R[1] - L[1] );
+#  else
+   b = lmdal * ( L[4] ) - ( L[1] )
+     - lmdar * ( R[4] ) + ( R[1] )
+     + lmdal * ( R[1]*rV1 + PR[4] )
+     - lmdar * ( L[1]*lV1 + PL[4] )
+     - lmdatlmda*( R[1] - L[1] );
+#  endif
 
-    c = lmdar*R[1] - lmdal*L[1] - ( R[1]*rV1 + PR[4] ) + ( L[1]*lV1 + PL[4] );
+   c = lmdar*R[1] - lmdal*L[1] - ( R[1]*rV1 + PR[4] ) + ( L[1]*lV1 + PL[4] );
 
-    real delta = FMA( b, b, -(real)4*a*c );
+   real delta = FMA( b, b, -(real)4*a*c );
 
-#   ifdef CHECK_FAILED_CELL_IN_FLUID
-    if (delta < (real) 0.0) printf("delta=%f\n", delta);
-#   endif
+#  ifdef CHECK_FAILED_CELL_IN_FLUID
+   if (delta < (real) 0.0) printf("delta=%f\n", delta);
+#  endif
 
-    lmdas = - ((real)2.0 * c) / ( b + SIGN(b) * SQRT( delta ) );
+   lmdas = - ((real)2.0 * c) / ( b + SIGN(b) * SQRT( delta ) );
 
-#   ifdef REDUCED_ENERGY
-	ps = lmdas*( ( R[4] + R[0] )*( rV1 - lmdar ) + PR[4]*rV1 ) - R[1]*(rV1 - lmdar) - PR[4];
-    ps /= ( lmdas*lmdar - (real)1.0 );
-#   else
-	ps = lmdas*(  R[4]           *( rV1 - lmdar ) + PR[4]*rV1 ) - R[1]*(rV1 - lmdar) - PR[4];
-    ps /= ( lmdas*lmdar - (real)1.0 );
-#   endif
+#  ifdef REDUCED_ENERGY
+   ps = lmdas*( ( R[4] + R[0] )*( rV1 - lmdar ) + PR[4]*rV1 ) - R[1]*(rV1 - lmdar) - PR[4];
+   ps /= ( lmdas*lmdar - (real)1.0 );
+#  else
+   ps = lmdas*(  R[4]           *( rV1 - lmdar ) + PR[4]*rV1 ) - R[1]*(rV1 - lmdar) - PR[4];
+   ps /= ( lmdas*lmdar - (real)1.0 );
+#  endif
 
-	//ps = lmdas*( ( L[4] + L[0] )*( lV1 - lmdal ) + PL[4]*lV1 ) - L[1]*(lV1 - lmdal) - PL[4];
-    //ps /= ( lmdas*lmdal - (real)1.0 );
+   //ps = lmdas*( ( L[4] + L[0] )*( lV1 - lmdal ) + PL[4]*lV1 ) - L[1]*(lV1 - lmdal) - PL[4];
+   //ps /= ( lmdas*lmdal - (real)1.0 );
 
 
  /* 7. Determine intercell flux according to Mignone 13
@@ -277,7 +284,14 @@ void Hydro_RiemannSolver_HLLC( const int XYZ, real Flux_Out[], const real L_In[]
     Usl[4] = FMA( - PL[4], lV1, FMA( L[4], factor0, ps * lmdas ) ) * den;
 
 #   ifdef CHECK_FAILED_CELL_IN_FLUID
-    SRHD_CheckUnphysical(Usl, NULL, __FUNCTION__, __LINE__, true);
+    if (State != NULL)
+    {
+      *State = SRHD_CheckUnphysical(Usl, NULL, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, __FUNCTION__, __LINE__, true );
+      if (*State){
+        printf("Switch to HLLE solver!\n");
+        return;
+      }
+    }
 #   endif
 
     /* now calculate Fsr using Mignone Eq 14 */
@@ -305,7 +319,14 @@ void Hydro_RiemannSolver_HLLC( const int XYZ, real Flux_Out[], const real L_In[]
     Usr[4] = FMA( - PR[4], rV1, FMA( R[4], factor0, ps * lmdas ) ) * den;
 
 #   ifdef CHECK_FAILED_CELL_IN_FLUID
-    SRHD_CheckUnphysical(Usr, NULL, __FUNCTION__, __LINE__, true);
+    if (State != NULL)
+    {
+      *State = SRHD_CheckUnphysical(Usr, NULL, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, __FUNCTION__, __LINE__, false );
+      if (*State){
+        printf("Switch to HLLE solver!\n");
+        return;
+      }
+    }
 #   endif
 
     /* now calculate Fsr using Mignone Eq 14 */

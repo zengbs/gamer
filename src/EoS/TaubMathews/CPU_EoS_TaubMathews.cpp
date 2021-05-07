@@ -7,6 +7,7 @@
 #if ( MODEL == HYDRO && defined SRHD )
 
 real VectorDotProduct( real V1, real V2, real V3 );
+void Swap(real *a, real *b);
 
 /********************************************************
 1. Approximately relativistic ideal gas EoS (Taub-Mathews EoS)
@@ -72,8 +73,18 @@ static real EoS_GuessHTilde_TaubMathews( const real Con[], real* const Constant,
                                          const int AuxArray_Int[], const real *const Table[EOS_NTABLE_MAX] )
 {
   real GuessHTilde, Discrimination;
+  real Con_Sort[NCOMP_FLUID];
 
-  real Msqr = VectorDotProduct(Con[1], Con[2], Con[3]);
+  for (int v=0;v<NCOMP_TOTAL;v++) Con_Sort[v] = Con[v];
+
+  // sorting momentum
+  if (Con_Sort[1]>Con_Sort[3]) Swap(&Con_Sort[1], &Con_Sort[3]);
+  if (Con_Sort[1]>Con_Sort[2]) Swap(&Con_Sort[1], &Con_Sort[2]);
+  if (Con_Sort[2]>Con_Sort[3]) Swap(&Con_Sort[2], &Con_Sort[3]);
+
+
+  real Msqr = VectorDotProduct(Con_Sort[1], Con_Sort[2], Con_Sort[3]);
+
   real Dsqr = SQR(Con[0]);
   real abc = (real)1.0 / Dsqr;
   real E_D = Con[4] / Con[0];

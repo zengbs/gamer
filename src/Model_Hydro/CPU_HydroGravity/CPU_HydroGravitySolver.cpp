@@ -303,13 +303,19 @@ void CPU_HydroGravitySolver(
          } // if ( UsePot )
 
 #        ifdef SRHD
-         real Cons_new[NCOMP_FLUID], Prim_new[NCOMP_FLUID], LorentzFactor_new;
+         real Cons_new[NCOMP_FLUID], Prim_new[NCOMP_FLUID], LorentzFactor_new, Cons_old2[NCOMP_FLUID];
 
          Cons_new[DENS] = g_Flu_Array_New[P][DENS][idx_g0];
          Cons_new[MOMX] = g_Flu_Array_New[P][MOMX][idx_g0];
          Cons_new[MOMY] = g_Flu_Array_New[P][MOMY][idx_g0];
          Cons_new[MOMZ] = g_Flu_Array_New[P][MOMZ][idx_g0];
          Cons_new[ENGY] = g_Flu_Array_New[P][ENGY][idx_g0];
+
+         Cons_old2[DENS] = g_Flu_Array_New[P][DENS][idx_g0];
+         Cons_old2[MOMX] = g_Flu_Array_New[P][MOMX][idx_g0];
+         Cons_old2[MOMY] = g_Flu_Array_New[P][MOMY][idx_g0];
+         Cons_old2[MOMZ] = g_Flu_Array_New[P][MOMZ][idx_g0];
+         Cons_old2[ENGY] = g_Flu_Array_New[P][ENGY][idx_g0];
 
          Hydro_Con2Pri( Cons_new, Prim_new, NULL_REAL, NULL_BOOL, NULL_INT, NULL,
                         NULL_BOOL, NULL_REAL, NULL, NULL, EoS_GuessHTilde_Func,
@@ -504,7 +510,6 @@ void CPU_HydroGravitySolver(
 
 
 #        ifdef SRHD
-#        ifdef CHECK_FAILED_CELL_IN_FLUID
 //       check unphysical result
          real Cons[NCOMP_FLUID];
 
@@ -514,8 +519,15 @@ void CPU_HydroGravitySolver(
          Cons[MOMZ] = g_Flu_Array_New[P][MOMZ][idx_g0];
          Cons[ENGY] = g_Flu_Array_New[P][ENGY][idx_g0];
 
-         SRHD_CheckUnphysical( Cons, NULL, __FUNCTION__, __LINE__, true );
-#        endif
+         if (SRHD_CheckUnphysical( Cons, NULL, EoS_GuessHTilde_Func, EoS_HTilde2Temp_Func, c_EoS_AuxArray_Flt, c_EoS_AuxArray_Int,
+                                   c_EoS_Table, __FUNCTION__, __LINE__, false ))
+         {
+            g_Flu_Array_New[P][DENS][idx_g0] = Cons_old2[DENS];
+            g_Flu_Array_New[P][MOMX][idx_g0] = Cons_old2[MOMX];
+            g_Flu_Array_New[P][MOMY][idx_g0] = Cons_old2[MOMY];
+            g_Flu_Array_New[P][MOMZ][idx_g0] = Cons_old2[MOMZ];
+            g_Flu_Array_New[P][ENGY][idx_g0] = Cons_old2[ENGY];
+         }
 #        endif
 
       } // CGPU_LOOP( idx_g0, CUBE(PS1) )

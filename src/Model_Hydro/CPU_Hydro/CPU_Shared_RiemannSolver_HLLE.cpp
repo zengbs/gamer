@@ -87,14 +87,12 @@ void Hydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In[]
 
 
 /*  1. compute primitive vars. from conserved vars. */
-    //lFactor = SRHydro_Con2Pri (L, PL, Gamma, MinTemp);
-    //rFactor = SRHydro_Con2Pri (R, PR, Gamma, MinTemp);
-    Hydro_Con2Pri (L, PL, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL, 
-              (real)NULL_REAL, NULL, NULL, EoS_GuessHTilde, EoS_HTilde2Temp,
-              EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL, &lFactor );
+    Hydro_Con2Pri( L, PL, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL, 
+                  (real)NULL_REAL, NULL, NULL, EoS_GuessHTilde, EoS_HTilde2Temp,
+                  EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL, &lFactor );
        
-    Hydro_Con2Pri (R, PR, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL,
-                   (real)NULL_REAL, NULL, NULL, EoS_GuessHTilde, EoS_HTilde2Temp,
+    Hydro_Con2Pri( R, PR, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL,
+                  (real)NULL_REAL, NULL, NULL, EoS_GuessHTilde, EoS_HTilde2Temp,
                   EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL, &rFactor );
 
 #   ifdef FOUR_VELOCITY

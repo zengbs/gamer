@@ -66,7 +66,9 @@ void Hydro_FullStepUpdate( const real g_Input[][ CUBE(FLU_NXT) ], real g_Output[
                            const real g_FC_B[][ PS2P1*SQR(PS2) ], const real g_Flux[][NCOMP_TOTAL_PLUS_MAG][ CUBE(N_FC_FLUX) ],
                            const real dt, const real dh, const real MinDens, const real MinEint,
                            const real DualEnergySwitch, const bool NormPassive, const int NNorm, const int NormIdx[],
-                           const double EoS_AuxArray_Flt[], char *state );
+                           const EoS_GUESS_t EoS_GuessHTilde, const EoS_H2TEM_t EoS_HTilde2Temp,
+                           const EoS_TEM2H_t EoS_Temp2HTilde, const double EoS_AuxArray_Flt[],
+                           const int EoS_AuxArray_Int[], const real *const EoS_Table[EOS_NTABLE_MAX], char *state );
 #if   ( RSOLVER == EXACT )
 void Hydro_RiemannSolver_Exact( const int XYZ, real Flux_Out[], const real L_In[], const real R_In[],
                                 const real MinDens, const real MinPres, const EoS_DE2P_t EoS_DensEint2Pres,
@@ -90,7 +92,7 @@ void Hydro_RiemannSolver_HLLC( const int XYZ, real Flux_Out[], const real L_In[]
                                const EoS_DP2C_t EoS_DensPres2CSqr, const EoS_GUESS_t EoS_GuessHTilde,
                                const EoS_H2TEM_t EoS_HTilde2Temp, const EoS_TEM2C_t EoS_Temper2CSqr,
                                const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
-                               const real* const EoS_Table[EOS_NTABLE_MAX] );
+                               const real* const EoS_Table[EOS_NTABLE_MAX], bool *State );
 #elif ( RSOLVER == HLLD )
 void Hydro_RiemannSolver_HLLD( const int XYZ, real Flux_Out[], const real L_In[], const real R_In[],
                                const real MinDens, const real MinPres, const EoS_DE2P_t EoS_DensEint2Pres,
@@ -315,6 +317,7 @@ void CPU_FluidSolver_MHM(
    char state;
 #  endif 
 
+   state = 0;
 
 
 #  ifdef UNSPLIT_GRAVITY
@@ -529,7 +532,9 @@ void CPU_FluidSolver_MHM(
 //             4. full-step evolution
                Hydro_FullStepUpdate( g_Flu_Array_In[P], g_Flu_Array_Out[P], g_DE_Array_Out[P], g_Mag_Array_Out[P],
                                      g_FC_Flux_1PG, dt, dh, MinDens, MinEint, DualEnergySwitch,
-                                     NormPassive, NNorm, c_NormIdx, c_EoS_AuxArray_Flt, &state );
+                                     NormPassive, NNorm, c_NormIdx, EoS_GuessHTilde_Func, EoS_HTilde2Temp_Func,
+                                     EoS_Temp2HTilde_Func, c_EoS_AuxArray_Flt, c_EoS_AuxArray_Int,
+                                     c_EoS_Table, &state);
  
                iteration++;
  
@@ -679,7 +684,7 @@ void Hydro_RiemannPredict_Flux( const real g_ConVar[][ CUBE(FLU_NXT) ],
 #        elif ( RSOLVER == HLLC  &&  !defined MHD )
          Hydro_RiemannSolver_HLLC ( d, Flux_1Face, ConVar_L, ConVar_R, MinDens, MinPres, EoS_DensEint2Pres, EoS_DensPres2CSqr,
                                     EoS_GuessHTilde, EoS_HTilde2Temp, EoS_Temper2CSqr,
-                                    EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
+                                    EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL );
 #        elif ( RSOLVER == HLLD  &&  defined MHD )
          Hydro_RiemannSolver_HLLD ( d, Flux_1Face, ConVar_L, ConVar_R, MinDens, MinPres,
                                     EoS_DensEint2Pres, EoS_DensPres2CSqr, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
