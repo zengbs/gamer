@@ -341,7 +341,8 @@ void SetParameter()
    {
      IsothermalSlab_VelocityDispersion  = Header[15];
      IsothermalSlab_PeakDens            = Header[16];
-     IsothermalSlab_Truncation          = Header[21];
+     //IsothermalSlab_Truncation          = Header[21];
+     IsothermalSlab_Truncation          = 0.95*0.5*amr->BoxSize[2];
      gasDiskPeakDens                    = Header[19];
 
      IsothermalSlab_VelocityDispersion *= 1e5/UNIT_V; // km/s --> 1/c
