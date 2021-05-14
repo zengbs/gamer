@@ -64,6 +64,7 @@ static real *Z;
 static real ambientTemperature;
 static real gasDiskTemperature;
 static real gasDiskPeakDens;
+static real interfaceHeight;
 
 // Dark logarithmic halo potential
        real  v_halo;
@@ -745,7 +746,7 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
    real xc = x - IsothermalSlab_Center[0];
    real yc = y - IsothermalSlab_Center[1];
    real zc = z - IsothermalSlab_Center[2];
-   real interfaceHeight = Header[17];
+   interfaceHeight = Header[17];
    interfaceHeight *= Const_kpc/UNIT_L;
 
    if ( Jet_Ambient == 0 ) // uniform ambient
@@ -993,34 +994,31 @@ bool Flu_ResetByUser_Jets( real fluid[], const double x, const double y, const d
 static bool Flag_Region( const int i, const int j, const int k, const int lv, const int PID )
 {
 
-   if ( Amb_FluSphereRadius > 0.0 && OPT__FLAG_LOHNER_DENS == 1 )
-   {
-      const double dh     = amr->dh[lv];                                                         // grid size
-      const double Pos[3] = { amr->patch[0][lv][PID]->EdgeL[0] + (i+0.5)*dh,  // x,y,z position
-                              amr->patch[0][lv][PID]->EdgeL[1] + (j+0.5)*dh,
-                              amr->patch[0][lv][PID]->EdgeL[2] + (k+0.5)*dh  };
+    const double dh     = amr->dh[lv];                                                         // grid size
+    const double Pos[3] = { amr->patch[0][lv][PID]->EdgeL[0] + (i+0.5)*dh,  // x,y,z position
+                            amr->patch[0][lv][PID]->EdgeL[1] + (j+0.5)*dh,
+                            amr->patch[0][lv][PID]->EdgeL[2] + (k+0.5)*dh  };
    
-      bool Flag = false;  
+    bool Flag = false;  
    
-      const double Center[3]      = { 0.5*amr->BoxSize[0], 
-                                      0.5*amr->BoxSize[1], 
-                                      0.5*amr->BoxSize[2] };
+    const double Center[3]      = { 0.5*amr->BoxSize[0], 
+                                    0.5*amr->BoxSize[1], 
+                                    0.5*amr->BoxSize[2] };
    
-      const double dR[3]          = { Pos[0]-Center[0]-Jet_CenOffset[0], 
-                                      Pos[1]-Center[1]-Jet_CenOffset[1], 
-                                      Pos[2]-Center[2]-Jet_CenOffset[2] };
+    //const double dR[3]          = { Pos[0]-Center[0]-Jet_CenOffset[0], 
+    //                                Pos[1]-Center[1]-Jet_CenOffset[1], 
+    //                                Pos[2]-Center[2]-Jet_CenOffset[2] };
    
-      const double R              = sqrt( SQR(dR[0]) + SQR(dR[1]) + SQR(dR[2]) );
+    //const double R              = sqrt( SQR(dR[0]) + SQR(dR[1]) + SQR(dR[2]) );
    
-      const double ShellThickness = 16*amr->dh[3];
-     
+    //const double ShellThickness = 16*amr->dh[3];
+    
    
    
-      if ( R < Amb_FluSphereRadius - ShellThickness )  return true;
-      else                                             return false;
-   }
+    if ( fabs(Pos[2]-Center[2]) <= interfaceHeight )  return true;
+    else if ( lv >= 4)                                return false;
+    else                                              return true;
 
-   return true;
 
 } // FUNCTION : Flag_Region
 
@@ -1037,27 +1035,26 @@ bool Flag_User( const int i, const int j, const int k, const int lv, const int P
                                    Jet_Center[1], 
                                    Jet_Center[2] };
 
-   const double dR[3]          = { Pos[0]-Center[0], Pos[1]-Center[1], Pos[2]-Center[2] };
-   const double R              = sqrt( SQR(dR[0]) + SQR(dR[1]) + SQR(dR[2]) );
+   //const double dR[3]          = { Pos[0]-Center[0], Pos[1]-Center[1], Pos[2]-Center[2] };
+   //const double R              = sqrt( SQR(dR[0]) + SQR(dR[1]) + SQR(dR[2]) );
 
   
-   if ( Amb_FluSphereRadius*0.9 < R && R < Amb_FluSphereRadius && Amb_FluSphereRadius > 0.0 && Step > 1 )
-   {
-      if ( lv == MAX_LEVEL-1 )
-      {
-        if ( MPI_Rank == 0 ) 
-        #pragma omp master
-        {
-          system("touch STOP_GAMER_STOP");
-        }
-      }
-     
-   }
+   //if ( Amb_FluSphereRadius*0.9 < R && R < Amb_FluSphereRadius && Amb_FluSphereRadius > 0.0 && Step > 1 )
+   //{
+   //   if ( lv == MAX_LEVEL-1 )
+   //   {
+   //     if ( MPI_Rank == 0 ) 
+   //     #pragma omp master
+   //     {
+   //       system("touch STOP_GAMER_STOP");
+   //     }
+   //   }
+   //  
+   //}
 
    bool Flag = false;
 
-   Flag |= R < dh*1.8;
-   Flag |= R < Jet_MaxDis;
+   Flag |= fabs(Pos[2] - Center[2]) < dh*1.8;
 
    //Flag |= fabs(dR[0]) < 2.5 && fabs(dR[1]) < 0.3 && fabs(dR[2]) < 0.3;
 
