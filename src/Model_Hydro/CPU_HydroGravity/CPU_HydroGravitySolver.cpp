@@ -520,7 +520,7 @@ void CPU_HydroGravitySolver(
          Cons[ENGY] = g_Flu_Array_New[P][ENGY][idx_g0];
 
          if (SRHD_CheckUnphysical( Cons, NULL, EoS_GuessHTilde_Func, EoS_HTilde2Temp_Func, c_EoS_AuxArray_Flt, c_EoS_AuxArray_Int,
-                                   c_EoS_Table, __FUNCTION__, __LINE__, false ))
+                                   c_EoS_Table, __FUNCTION__, __LINE__, true ))
          {
             g_Flu_Array_New[P][DENS][idx_g0] = Cons_old2[DENS];
             g_Flu_Array_New[P][MOMX][idx_g0] = Cons_old2[MOMX];
