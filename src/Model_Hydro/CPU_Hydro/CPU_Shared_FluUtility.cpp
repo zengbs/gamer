@@ -226,8 +226,10 @@ void Hydro_Con2Pri( const real In[], real Out[], const real MinPres,
    real HTilde, Factor, Temp, AAA;
    real *LorentzFactor = &AAA;
 
+#  ifdef CHECK_FAILED_CELL_IN_FLUID
    SRHD_CheckUnphysical( In, NULL, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int,
                          EoS_Table, __FUNCTION__, __LINE__, true );
+#  endif
 
    HTilde = SRHD_Con2HTilde( In, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
 

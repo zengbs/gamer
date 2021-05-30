@@ -65,6 +65,8 @@ static real ambientTemperature;
 static real gasDiskTemperature;
 static real gasDiskPeakDens;
 static real interfaceHeight;
+static real gasDisk_highResRadius;
+static int  gasDisk_lowRes_LEVEL;
 
 // Dark logarithmic halo potential
        real  v_halo;
@@ -203,6 +205,9 @@ void SetParameter()
    ReadPara->Add( "Jet_SmoothVel",           &Jet_SmoothVel ,           false,        Useless_bool,   Useless_bool    );
    ReadPara->Add( "Jet_SrcDens",             &Jet_SrcDens   ,          -1.0,          Eps_double,     NoMax_double    );
    ReadPara->Add( "Jet_SrcTemp",             &Jet_SrcTemp   ,          -1.0,          Eps_double,     NoMax_double    );
+   ReadPara->Add( "gasDisk_highResRadius",   &gasDisk_highResRadius,   -1.0,          NoMin_double,   NoMax_double    );
+   ReadPara->Add( "gasDisk_lowRes_LEVEL",    &gasDisk_lowRes_LEVEL,    -1,                       0,      NoMax_int    );
+
 
 // load source geometry parameters
    ReadPara->Add( "Jet_Radius",              &Jet_Radius,              -1.0,          Eps_double,     NoMax_double    );
@@ -331,6 +336,8 @@ void SetParameter()
 
    Jet_Duration             *= Const_Myr   / UNIT_T;
 
+   gasDisk_highResRadius    *= Const_kpc   / UNIT_L;
+
    if ( Jet_Ambient == 0  )
    {
      Amb_UniformDens        *= 1.0         / UNIT_D;
@@ -447,6 +454,8 @@ void SetParameter()
      Aux_Message( stdout, "  Jet_Radius               = %14.7e kpc\n",        Jet_Radius*UNIT_L/Const_kpc                     );
      Aux_Message( stdout, "  Jet_HalfHeight           = %14.7e kpc\n",        Jet_HalfHeight*UNIT_L/Const_kpc                 );
      Aux_Message( stdout, "  Jet_MaxDis               = %14.7e kpc\n",        Jet_MaxDis*UNIT_L/Const_kpc                     );
+     Aux_Message( stdout, "  gasDisk_highResRadius    = %14.7e kpc\n",        gasDisk_highResRadius*UNIT_L/Const_kpc          );
+     Aux_Message( stdout, "  gasDisk_lowRes_LEVEL     = %d\n",                gasDisk_lowRes_LEVEL                            );
    }
 
    if ( Jet_Ambient == 0 && MPI_Rank == 0 )
@@ -999,26 +1008,27 @@ static bool Flag_Region( const int i, const int j, const int k, const int lv, co
                             amr->patch[0][lv][PID]->EdgeL[1] + (j+0.5)*dh,
                             amr->patch[0][lv][PID]->EdgeL[2] + (k+0.5)*dh  };
    
-    bool Flag = false;  
+    bool Flag = false;
    
     const double Center[3]      = { 0.5*amr->BoxSize[0], 
                                     0.5*amr->BoxSize[1], 
                                     0.5*amr->BoxSize[2] };
    
-    //const double dR[3]          = { Pos[0]-Center[0]-Jet_CenOffset[0], 
-    //                                Pos[1]-Center[1]-Jet_CenOffset[1], 
-    //                                Pos[2]-Center[2]-Jet_CenOffset[2] };
+    const double dr[3]          = { Pos[0]-Center[0]-Jet_CenOffset[0], 
+                                    Pos[1]-Center[1]-Jet_CenOffset[1], 
+                                    Pos[2]-Center[2]-Jet_CenOffset[2] };
    
-    //const double R              = sqrt( SQR(dR[0]) + SQR(dR[1]) + SQR(dR[2]) );
+    //const double r              = sqrt( SQR(dr[0]) + SQR(dr[1]) + SQR(dr[2]) );
+    const double R              = sqrt( SQR(dr[0]) + SQR(dr[1]) );
    
     //const double ShellThickness = 16*amr->dh[3];
     
    
    
-    if ( fabs(Pos[2]-Center[2]) <= interfaceHeight )  return true;
-    else if ( lv >= 4)                                return false;
-    else                                              return true;
+    Flag = R > gasDisk_highResRadius && lv > gasDisk_lowRes_LEVEL && fabs(dr[2]) < interfaceHeight;
 
+    if (Flag) return false;
+    else      return true;
 
 } // FUNCTION : Flag_Region
 
