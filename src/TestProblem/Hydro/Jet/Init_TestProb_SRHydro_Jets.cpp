@@ -1026,41 +1026,40 @@ static bool Flag_Region( const int i, const int j, const int k, const int lv, co
 
 bool Flag_User( const int i, const int j, const int k, const int lv, const int PID, const double *Threshold )
 {
-   const double dh     = amr->dh[lv];                                                  // grid size
-   const double Pos[3] = { amr->patch[0][lv][PID]->EdgeL[0] + (i+0.5)*dh,              // x,y,z position
-                           amr->patch[0][lv][PID]->EdgeL[1] + (j+0.5)*dh,
-                           amr->patch[0][lv][PID]->EdgeL[2] + (k+0.5)*dh  };
+  const double dh     = amr->dh[lv];                                                  // grid size
+  const double Pos[3] = { amr->patch[0][lv][PID]->EdgeL[0] + (i+0.5)*dh,              // x,y,z position
+                          amr->patch[0][lv][PID]->EdgeL[1] + (j+0.5)*dh,
+                          amr->patch[0][lv][PID]->EdgeL[2] + (k+0.5)*dh  };
 
-   const double Center[3]      = { Jet_Center[0], 
-                                   Jet_Center[1], 
-                                   Jet_Center[2] };
+  const double Center[3]      = { Jet_Center[0], 
+                                  Jet_Center[1], 
+                                  Jet_Center[2] };
 
-   //const double dR[3]          = { Pos[0]-Center[0], Pos[1]-Center[1], Pos[2]-Center[2] };
-   //const double R              = sqrt( SQR(dR[0]) + SQR(dR[1]) + SQR(dR[2]) );
+  const double dR[3]          = { Pos[0]-Center[0], Pos[1]-Center[1], Pos[2]-Center[2] };
+  const double R              = sqrt( SQR(dR[0]) + SQR(dR[1]) + SQR(dR[2]) );
 
   
-   //if ( Amb_FluSphereRadius*0.9 < R && R < Amb_FluSphereRadius && Amb_FluSphereRadius > 0.0 && Step > 1 )
-   //{
-   //   if ( lv == MAX_LEVEL-1 )
-   //   {
-   //     if ( MPI_Rank == 0 ) 
-   //     #pragma omp master
-   //     {
-   //       system("touch STOP_GAMER_STOP");
-   //     }
-   //   }
-   //  
-   //}
+  bool Flag;
 
-   bool Flag = false;
 
-   Flag |= fabs(Pos[2] - Center[2]) < dh*1.8;
+  Flag  = fabs(Pos[2] - Center[2]) < dh*1.8;
 
-   //Flag |= fabs(dR[0]) < 2.5 && fabs(dR[1]) < 0.3 && fabs(dR[2]) < 0.3;
+  bool Disk, Bubble, Src;
 
-   if ( Flag ) return true;
-   else        return false;
+  //Disk     = fabs(Pos[2]-Center[2]) <= interfaceHeight;
+  //Disk    &= R > Jet_Radius;
+  //Disk    &= lv <= Disk_MAX_LEVEL;
 
+  //Bubble   = fabs(Pos[2]-Center[2]) > interfaceHeight;
+  //Bubble  &= lv <= Bubb_MAX_LEVEL;
+  
+  //Src      = fabs(Pos[2]-Center[2]) <= interfaceHeight;
+  //Src     &= R <= Jet_Radius;
+
+  Src      = R <= dh*1.8;
+
+  //return Disk || Bubble || Src;
+  return Src;
 } // FUNCTION : Flag_User
 
 void CartesianRotate( double x[], double theta, double phi, bool inverse )
