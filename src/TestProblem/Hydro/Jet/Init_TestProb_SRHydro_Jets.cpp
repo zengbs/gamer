@@ -66,7 +66,9 @@ static real gasDiskTemperature;
 static real gasDiskPeakDens;
 static real interfaceHeight;
 static real gasDisk_highResRadius;
+static real jetSrc_highResRadius;
 static int  gasDisk_lowRes_LEVEL;
+static int  jetSrc_lowRes_LEVEL;
 
 // Dark logarithmic halo potential
        real  v_halo;
@@ -207,6 +209,8 @@ void SetParameter()
    ReadPara->Add( "Jet_SrcTemp",             &Jet_SrcTemp   ,          -1.0,          Eps_double,     NoMax_double    );
    ReadPara->Add( "gasDisk_highResRadius",   &gasDisk_highResRadius,   -1.0,          NoMin_double,   NoMax_double    );
    ReadPara->Add( "gasDisk_lowRes_LEVEL",    &gasDisk_lowRes_LEVEL,    -1,                       0,      NoMax_int    );
+   ReadPara->Add( "jetSrc_highResRadius",    &jetSrc_highResRadius,    -1.0,          NoMin_double,   NoMax_double    );
+   ReadPara->Add( "jetSrc_lowRes_LEVEL",     &jetSrc_lowRes_LEVEL,     -1,                       0,      NoMax_int    );
 
 
 // load source geometry parameters
@@ -337,6 +341,7 @@ void SetParameter()
    Jet_Duration             *= Const_Myr   / UNIT_T;
 
    gasDisk_highResRadius    *= Const_kpc   / UNIT_L;
+   jetSrc_highResRadius     *= Const_kpc   / UNIT_L;
 
    if ( Jet_Ambient == 0  )
    {
@@ -456,6 +461,8 @@ void SetParameter()
      Aux_Message( stdout, "  Jet_MaxDis               = %14.7e kpc\n",        Jet_MaxDis*UNIT_L/Const_kpc                     );
      Aux_Message( stdout, "  gasDisk_highResRadius    = %14.7e kpc\n",        gasDisk_highResRadius*UNIT_L/Const_kpc          );
      Aux_Message( stdout, "  gasDisk_lowRes_LEVEL     = %d\n",                gasDisk_lowRes_LEVEL                            );
+     Aux_Message( stdout, "  jetSrc_highResRadius     = %14.7e kpc\n",        jetSrc_highResRadius*UNIT_L/Const_kpc          );
+     Aux_Message( stdout, "  jetSrc_lowRes_LEVEL      = %d\n",                jetSrc_lowRes_LEVEL                            );
    }
 
    if ( Jet_Ambient == 0 && MPI_Rank == 0 )
@@ -1002,34 +1009,37 @@ bool Flu_ResetByUser_Jets( real fluid[], const double x, const double y, const d
 // (true/false): if the target cell (is/is not) within the region to be refined
 static bool Flag_Region( const int i, const int j, const int k, const int lv, const int PID )
 {
+    if (Step > 0)
+    {
+      const double dh     = amr->dh[lv];                                                         // grid size
+      const double Pos[3] = { amr->patch[0][lv][PID]->EdgeL[0] + (i+0.5)*dh,  // x,y,z position
+                              amr->patch[0][lv][PID]->EdgeL[1] + (j+0.5)*dh,
+                              amr->patch[0][lv][PID]->EdgeL[2] + (k+0.5)*dh  };
+   
+      bool Flag = false;
+   
+      const double Center[3]      = { 0.5*amr->BoxSize[0], 
+                                      0.5*amr->BoxSize[1], 
+                                      0.5*amr->BoxSize[2] };
+   
+      const double dr[3]          = { Pos[0]-Center[0]-Jet_CenOffset[0], 
+                                      Pos[1]-Center[1]-Jet_CenOffset[1], 
+                                      Pos[2]-Center[2]-Jet_CenOffset[2] };
+   
+      //const double r              = sqrt( SQR(dr[0]) + SQR(dr[1]) + SQR(dr[2]) );
+      const double R              = sqrt( SQR(dr[0]) + SQR(dr[1]) );
+   
+      //const double ShellThickness = 16*amr->dh[3];
+      
+   
+   
+      Flag = R > gasDisk_highResRadius && lv > gasDisk_lowRes_LEVEL && fabs(dr[2]) < 2.0*interfaceHeight;
 
-    const double dh     = amr->dh[lv];                                                         // grid size
-    const double Pos[3] = { amr->patch[0][lv][PID]->EdgeL[0] + (i+0.5)*dh,  // x,y,z position
-                            amr->patch[0][lv][PID]->EdgeL[1] + (j+0.5)*dh,
-                            amr->patch[0][lv][PID]->EdgeL[2] + (k+0.5)*dh  };
-   
-    bool Flag = false;
-   
-    const double Center[3]      = { 0.5*amr->BoxSize[0], 
-                                    0.5*amr->BoxSize[1], 
-                                    0.5*amr->BoxSize[2] };
-   
-    const double dr[3]          = { Pos[0]-Center[0]-Jet_CenOffset[0], 
-                                    Pos[1]-Center[1]-Jet_CenOffset[1], 
-                                    Pos[2]-Center[2]-Jet_CenOffset[2] };
-   
-    //const double r              = sqrt( SQR(dr[0]) + SQR(dr[1]) + SQR(dr[2]) );
-    const double R              = sqrt( SQR(dr[0]) + SQR(dr[1]) );
-   
-    //const double ShellThickness = 16*amr->dh[3];
-    
-   
-   
-    Flag = R > gasDisk_highResRadius && lv > gasDisk_lowRes_LEVEL && fabs(dr[2]) < interfaceHeight;
 
-    if (Flag) return false;
-    else      return true;
-
+      if (Flag) return false;
+      else      return true;
+    }
+    else    return true;
 } // FUNCTION : Flag_Region
 
 
@@ -1049,16 +1059,17 @@ bool Flag_User( const int i, const int j, const int k, const int lv, const int P
   const double R              = sqrt( SQR(dR[0]) + SQR(dR[1]) + SQR(dR[2]) );
 
   
-  bool Flag;
+  bool Flag, Disk, Bubble, Src;
 
+  Disk     = fabs(dR[2]) <= dh*1.8;
 
-  Flag  = fabs(Pos[2] - Center[2]) < dh*1.8;
-
-  bool Disk, Bubble, Src;
+  if (lv >= jetSrc_lowRes_LEVEL) Disk = false;
 
   Src      = R <= dh*1.8;
 
-  return Src;
+  Flag     = Src||Disk;
+
+  return Flag;
 } // FUNCTION : Flag_User
 
 void CartesianRotate( double x[], double theta, double phi, bool inverse )
