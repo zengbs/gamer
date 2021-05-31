@@ -1056,19 +1056,8 @@ bool Flag_User( const int i, const int j, const int k, const int lv, const int P
 
   bool Disk, Bubble, Src;
 
-  //Disk     = fabs(Pos[2]-Center[2]) <= interfaceHeight;
-  //Disk    &= R > Jet_Radius;
-  //Disk    &= lv <= Disk_MAX_LEVEL;
-
-  //Bubble   = fabs(Pos[2]-Center[2]) > interfaceHeight;
-  //Bubble  &= lv <= Bubb_MAX_LEVEL;
-  
-  //Src      = fabs(Pos[2]-Center[2]) <= interfaceHeight;
-  //Src     &= R <= Jet_Radius;
-
   Src      = R <= dh*1.8;
 
-  //return Disk || Bubble || Src;
   return Src;
 } // FUNCTION : Flag_User
 
