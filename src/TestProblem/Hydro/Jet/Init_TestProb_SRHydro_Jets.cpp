@@ -240,9 +240,9 @@ void SetParameter()
    ReadPara->Add( "CharacteristicSpeed",     &CharacteristicSpeed,     -1.0,          NoMin_double,   NoMax_double    );
 
 // load Milky Way parameters
-   ReadPara->Add( "IsothermalSlab_Center_x",          &IsothermalSlab_Center[0],          -1.0,          NoMin_double,   NoMax_double    );
-   ReadPara->Add( "IsothermalSlab_Center_y",          &IsothermalSlab_Center[1],          -1.0,          NoMin_double,   NoMax_double    );
-   ReadPara->Add( "IsothermalSlab_Center_z",          &IsothermalSlab_Center[2],          -1.0,          NoMin_double,   NoMax_double    );
+   ReadPara->Add( "IsothermalSlab_Center_x", &IsothermalSlab_Center[0],          -1.0,          NoMin_double,   NoMax_double    );
+   ReadPara->Add( "IsothermalSlab_Center_y", &IsothermalSlab_Center[1],          -1.0,          NoMin_double,   NoMax_double    );
+   ReadPara->Add( "IsothermalSlab_Center_z", &IsothermalSlab_Center[2],          -1.0,          NoMin_double,   NoMax_double    );
 
 // load time-dependent source varibles
    ReadPara->Add( "Jet_BurstStartTime",      &Jet_BurstStartTime,      -1.0,          NoMin_double,   NoMax_double    );
@@ -563,6 +563,9 @@ void SetArray()
 
    ParticleMass = Header[8]*Header[9];
 
+   interfaceHeight = Header[17];
+   interfaceHeight *= Const_kpc/UNIT_L;
+
    int Nx = (int)Header[22];
    int Ny = (int)Header[23];
    int Nz = (int)Header[24];
@@ -582,66 +585,49 @@ void SetArray()
    int NY = Ny+2*numGhost;
    int NZ = Nz+2*numGhost;
 
-   Rhoo = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
-   VelX = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
-   VelY = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
-   VelZ = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
-   Pres = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
+   if (Step == 0)
+   {
+      Rhoo = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
+      VelX = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
+      VelY = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
+      VelZ = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
+      Pres = (real***)calloc_3d_array((size_t)NX, (size_t)NY, (size_t)NZ, sizeof(real));
 
-   X = (real*)calloc((size_t)NX,sizeof(real));
-   Y = (real*)calloc((size_t)NY,sizeof(real));
-   Z = (real*)calloc((size_t)NZ,sizeof(real));
-
-
-   //for (int i=-numGhost;i<NX-numGhost;i++) X[i+numGhost] = (0.5+(real)i)*dx;
-   //for (int i=-numGhost;i<NY-numGhost;i++) Y[i+numGhost] = (0.5+(real)i)*dy;
-   //for (int i=-numGhost;i<NZ-numGhost;i++) Z[i+numGhost] = (0.5+(real)i)*dz;
-
-   real *Ptr;
-
-   Ptr = buffer + headerSize;
+      X = (real*)calloc((size_t)NX,sizeof(real));
+      Y = (real*)calloc((size_t)NY,sizeof(real));
+      Z = (real*)calloc((size_t)NZ,sizeof(real));
 
 
-   for (int c=0;c<5*NX*NY*NZ;c++){
-     int i, j, k, cc;
+      real *Ptr;
 
-     cc = c%(NX*NY*NZ);
-     i = (cc - cc%(NY*NZ)) / (NY*NZ);
-     j = ((cc - cc%NZ) / NZ) % NY;
-     k = cc%NZ;
+      Ptr = buffer + headerSize;
 
-     if (          0 <= c && c <   NX*NY*NZ ) Rhoo[i][j][k] = Ptr[c];
-     if (   NX*NY*NZ <= c && c < 2*NX*NY*NZ ) VelX[i][j][k] = Ptr[c];
-     if ( 2*NX*NY*NZ <= c && c < 3*NX*NY*NZ ) VelY[i][j][k] = Ptr[c];
-     if ( 3*NX*NY*NZ <= c && c < 4*NX*NY*NZ ) VelZ[i][j][k] = Ptr[c];
-     if ( 4*NX*NY*NZ <= c && c < 5*NX*NY*NZ ) Pres[i][j][k] = Ptr[c];
 
-   }
+      for (int c=0;c<5*NX*NY*NZ;c++){
+        int i, j, k, cc;
+
+        cc = c%(NX*NY*NZ);
+        i = (cc - cc%(NY*NZ)) / (NY*NZ);
+        j = ((cc - cc%NZ) / NZ) % NY;
+        k = cc%NZ;
+
+        if (          0 <= c && c <   NX*NY*NZ ) Rhoo[i][j][k] = Ptr[c];
+        if (   NX*NY*NZ <= c && c < 2*NX*NY*NZ ) VelX[i][j][k] = Ptr[c];
+        if ( 2*NX*NY*NZ <= c && c < 3*NX*NY*NZ ) VelY[i][j][k] = Ptr[c];
+        if ( 3*NX*NY*NZ <= c && c < 4*NX*NY*NZ ) VelZ[i][j][k] = Ptr[c];
+        if ( 4*NX*NY*NZ <= c && c < 5*NX*NY*NZ ) Pres[i][j][k] = Ptr[c];
+
+      }
   
-   Ptr += 5*NX*NY*NZ;
-   for (int c=0;c<NX;c++) X[c] = Ptr[c];
+      Ptr += 5*NX*NY*NZ;
+      for (int c=0;c<NX;c++) X[c] = Ptr[c];
 
-   Ptr += NX;
-   for (int c=0;c<NY;c++) Y[c] = Ptr[c];
+      Ptr += NX;
+      for (int c=0;c<NY;c++) Y[c] = Ptr[c];
 
-   Ptr += NY;
-   for (int c=0;c<NZ;c++) Z[c] = Ptr[c];
-
-   //bool Pass = true;
-
-   //for (int i=0;i<NX;i++){
-   //for (int j=0;j<NY;j++){
-   //for (int k=0;k<NZ;k++){
-   //
-   //Pass &= Rhoo[i][j][k] == (real)16.;
-   //Pass &= VelX[i][j][k] == (real)32.;
-   //Pass &= VelY[i][j][k] == (real)64.;
-   //Pass &= VelZ[i][j][k] == (real)128.;
-   //Pass &= Pres[i][j][k] == (real)256.;
-
-   //}}}
-   //if (Pass == false){ printf("fail!!!!!!!!!!!!!!!!!!!\n"); exit(0); }
-   //if (Pass == true) { printf("pass!!!!!!!!!!!!!!!!!!!\n"); exit(0); }
+      Ptr += NY;
+      for (int c=0;c<NZ;c++) Z[c] = Ptr[c];
+   }
 }
 
 
@@ -762,8 +748,6 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
    real xc = x - IsothermalSlab_Center[0];
    real yc = y - IsothermalSlab_Center[1];
    real zc = z - IsothermalSlab_Center[2];
-   interfaceHeight = Header[17];
-   interfaceHeight *= Const_kpc/UNIT_L;
 
    if ( Jet_Ambient == 0 ) // uniform ambient
    {
@@ -1031,8 +1015,7 @@ static bool Flag_Region( const int i, const int j, const int k, const int lv, co
    
       //const double ShellThickness = 16*amr->dh[3];
       
-   
-   
+
       Flag = R > gasDisk_highResRadius && lv > gasDisk_lowRes_LEVEL && fabs(dr[2]) < 2.0*interfaceHeight;
 
 
