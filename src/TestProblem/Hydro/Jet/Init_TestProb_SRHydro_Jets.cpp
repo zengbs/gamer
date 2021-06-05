@@ -1075,6 +1075,44 @@ void CartesianRotate( double x[], double theta, double phi, bool inverse )
   for (int i=0;i<3;i++) x[i] = xp[i];
 }
 
+//-------------------------------------------------------------------------------------------------------
+// Function    :  Mis_GetTimeStep_User_Template
+// Description :  Template of user-defined criteria to estimate the evolution time-step
+//
+// Note        :  1. This function should be applied to both physical and comoving coordinates and always
+//                   return the evolution time-step (dt) actually used in various solvers
+//                   --> Physical coordinates : dt = physical time interval
+//                       Comoving coordinates : dt = delta(scale_factor) / ( Hubble_parameter*scale_factor^3 )
+//                   --> We convert dt back to the physical time interval, which equals "delta(scale_factor)"
+//                       in the comoving coordinates, in Mis_GetTimeStep()
+//                2. Invoked by Mis_GetTimeStep() using the function pointer "Mis_GetTimeStep_User_Ptr",
+//                   which must be set by a test problem initializer
+//                3. Enabled by the runtime option "OPT__DT_USER"
+//
+// Parameter   :  lv       : Target refinement level
+//                dTime_dt : dTime/dt (== 1.0 if COMOVING is off)
+//
+// Return      :  dt
+//-------------------------------------------------------------------------------------------------------
+double Mis_GetTimeStep_User( const int lv, const double dTime_dt )
+{
+
+// put your favorite time-step criteria here
+// ##########################################################################################################
+
+   double Jet_SrcGamma = sqrt(1.0 + SQR(Jet_SrcVel));
+   double Jet_Src3Vel = Jet_SrcVel / Jet_SrcGamma;
+
+   double dh  = amr->dh[MAX_LEVEL];
+   
+   double Cs      = 0.182574; // 1.0/sqrt(3);
+   double dt_user = DT__FLUID * dh /(Jet_Src3Vel+3.0*Cs);
+
+
+   return dt_user;
+
+} // FUNCTION : Mis_GetTimeStep_User_Template
+
 
 //-------------------------------------------------------------------------------------------------------
 // Function    :  Init_TestProb_Hydro_Jets
@@ -1104,7 +1142,18 @@ void Init_TestProb_Hydro_Jets()
    Init_Function_User_Ptr   = SetGridIC;
    Flag_User_Ptr            = Flag_User;
    Flag_Region_Ptr          = Flag_Region;
-   Mis_GetTimeStep_User_Ptr = NULL;
+
+   if (Jet_Fire > 0)
+   {
+     OPT__DT_USER             = 1;
+     Mis_GetTimeStep_User_Ptr = Mis_GetTimeStep_User;
+   }
+   else
+   {
+     OPT__DT_USER             = 0;
+     Mis_GetTimeStep_User_Ptr = NULL;
+   }
+
    BC_User_Ptr              = NULL;
    Flu_ResetByUser_Func_Ptr = Flu_ResetByUser_Jets;
    Output_User_Ptr          = NULL;
