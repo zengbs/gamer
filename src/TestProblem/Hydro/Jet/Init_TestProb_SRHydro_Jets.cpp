@@ -65,8 +65,8 @@ static real ambientTemperature;
 static real gasDiskTemperature;
 static real gasDiskPeakDens;
 static real interfaceHeight;
-static real gasDisk_highResRadius;
-static real jetSrc_highResRadius;
+static double gasDisk_highResRadius;
+static double jetSrc_highResRadius;
 static int  gasDisk_lowRes_LEVEL;
 static int  jetSrc_lowRes_LEVEL;
 
