@@ -234,7 +234,7 @@ void Init_ByRestart_HDF5( const char *FileName );
 
 
 // Interpolation
-void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3], const int CRange[3],                                   
+void AdaptiveInterpolate( real CData [], const int CSize[3], const int CStart[3], const int CRange[3],
                           real FData [], const int FSize[3], const int FStart[3],
                           const int NComp, const int TVar, const IntScheme_t IntScheme, const bool UnwrapPhase,
                           const bool Monotonic[], const bool OppSign0thOrder );

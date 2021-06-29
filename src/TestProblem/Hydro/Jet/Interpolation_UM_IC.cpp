@@ -72,7 +72,7 @@ real TrilinearInterpolation(real *FieldAtVertices, real *xyz000, real *dxyz, rea
   x1 = xyz000[0] + dxyz[0];
   y1 = xyz000[1] + dxyz[1];
   z1 = xyz000[2] + dxyz[2];
-  
+
   x = xyz[0];
   y = xyz[1];
   z = xyz[2];

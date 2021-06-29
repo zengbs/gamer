@@ -249,7 +249,7 @@ void Hydro_Con2Pri( const real In[], real Out[], const real MinPres,
    EoS_HTilde2Temp( HTilde, &Temp, NULL, NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
 
    Out[4] = Out[0]*Temp;
- 
+
 #  else
    Out[0] = In[0];
    Out[1] = In[1]*_Rho;
@@ -516,8 +516,8 @@ void Hydro_Con2Flux( const int XYZ, real Flux[], const real In[], const real Min
 
 //-------------------------------------------------------------------------------------------------------
 // Function    :  SRHD_Con2HTilde
-// Description :  
-// Note        :  
+// Description :
+// Note        :
 // Parameter   :  Con             : Array storing the conservative variables
 //                EoS_GuessHTilde : EoS routine to compute the reduced energy
 //                EoS_HTilde2Temp : EoS routine to compute the temperature
@@ -551,8 +551,8 @@ real SRHD_Con2HTilde( const real Con[], const EoS_GUESS_t EoS_GuessHTilde, const
 
 //-------------------------------------------------------------------------------------------------------
 // Function    :  SRHD_HTildeFunction
-// Description :  
-// Note        :  
+// Description :
+// Note        :
 // Parameter   :  HTilde          : The reduced specific enthalpy
 //                MSqr_DSqr       : (|Momentum|/Dens)**2
 //                Temp            : The temperature
@@ -609,8 +609,8 @@ real SRHD_Con2KineticEngy( real Con[], const EoS_GUESS_t EoS_GuessHTilde, const 
 
 //-------------------------------------------------------------------------------------------------------
 // Function    :  SRHD_CheckUnphysical
-// Description :  
-// Note        :  
+// Description :
+// Note        :
 // Parameter   :  Con           : Array storing the conservative variables
 //                Pri           : Array storing the primitive variables
 //                FunctionName  : The function occurring unphysical result
@@ -647,10 +647,10 @@ bool SRHD_CheckUnphysical( const real Con[], const real Pri[],
          || (real)  TINY_NUMBER >= Con[ENGY] || Con[ENGY]  >= (real)HUGE_NUMBER )       goto FAIL;
 
       real Con_Sort[NCOMP_FLUID];
-                              
+
       for (int v=0;v<NCOMP_TOTAL;v++) Con_Sort[v] = Con[v];
-                              
-      // sorting momentum  
+
+      // sorting momentum
       if (Con_Sort[1]>Con_Sort[3]) Swap(&Con_Sort[1], &Con_Sort[3]);
       if (Con_Sort[1]>Con_Sort[2]) Swap(&Con_Sort[1], &Con_Sort[2]);
       if (Con_Sort[2]>Con_Sort[3]) Swap(&Con_Sort[2], &Con_Sort[3]);
@@ -663,13 +663,13 @@ bool SRHD_CheckUnphysical( const real Con[], const real Pri[],
       real E_D = Con[4] / Con[0];
       real M_Dsqr = abc * Msqr;
       real M_D = SQRT( M_Dsqr );
-                              
-                              
+
+
       // (x+y)(x-y) is more accurate than x**2-y**2
       real X = SQRT( E_D*E_D + (real)2.0*E_D );
-      real Y = X + M_D;       
-      real Z = X - M_D;       
-      real discriminant = Y * Z;   
+      real Y = X + M_D;
+      real Z = X - M_D;
+      real discriminant = Y * Z;
 
 
 #     ifdef REDUCED_ENERGY
@@ -682,15 +682,15 @@ bool SRHD_CheckUnphysical( const real Con[], const real Pri[],
 // check root
       real HTilde;
       HTilde = SRHD_Con2HTilde( Con, EoS_GuessHTilde, EoS_HTilde2Temp, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
-      if ( HTilde != HTilde 
-        || HTilde <= (real)TINY_NUMBER 
+      if ( HTilde != HTilde
+        || HTilde <= (real)TINY_NUMBER
         || HTilde >= (real)HUGE_NUMBER )                                                goto FAIL;
 
 // check temperature
       real Temp;
       EoS_HTilde2Temp( HTilde, &Temp, NULL, NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table );
-      if ( Temp != Temp 
-        || Temp <= (real)TINY_NUMBER 
+      if ( Temp != Temp
+        || Temp <= (real)TINY_NUMBER
         || Temp >= (real)HUGE_NUMBER )                                                  goto FAIL;
 
 
@@ -1256,14 +1256,14 @@ real MHD_GetCellCenteredBEnergy( const real Bx_FC[], const real By_FC[], const r
 
 
 //-------------------------------------------------------------------------------------------------------
-// Function    :  
-// Description :  
-// Note        :  
-// Parameter   :  
+// Function    :
+// Description :
+// Note        :
+// Parameter   :
 //-------------------------------------------------------------------------------------------------------
 GPU_DEVICE
-void  NewtonRaphsonSolver(void (*FunPtr)(real, real, real, real, const EoS_H2TEM_t, real*, real*, const double*, const int*, const real *const*), 
-                          real MSqr_DSqr, real Constant, real *root, const EoS_H2TEM_t EoS_HTilde2Temp, 
+void  NewtonRaphsonSolver(void (*FunPtr)(real, real, real, real, const EoS_H2TEM_t, real*, real*, const double*, const int*, const real *const*),
+                          real MSqr_DSqr, real Constant, real *root, const EoS_H2TEM_t EoS_HTilde2Temp,
                           const real guess, const real epsabs, const real epsrel,
                           const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[],
                           const real *const EoS_Table[EOS_NTABLE_MAX] )
@@ -1304,10 +1304,10 @@ void  NewtonRaphsonSolver(void (*FunPtr)(real, real, real, real, const EoS_H2TEM
 
 
 //-------------------------------------------------------------------------------------------------------
-// Function    :  
-// Description :  
-// Note        :  
-// Parameter   :  
+// Function    :
+// Description :
+// Note        :
+// Parameter   :
 //-------------------------------------------------------------------------------------------------------
 GPU_DEVICE
 real VectorDotProduct( real V1, real V2, real V3 )

@@ -54,7 +54,7 @@ void Hydro_Con2Flux( const int XYZ, real Flux[], const real In[], const real Min
 GPU_DEVICE
 void Hydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In[], const real R_In[],
                                const real MinDens, const real MinPres, const EoS_DE2P_t EoS_DensEint2Pres,
-                               const EoS_DP2C_t EoS_DensPres2CSqr, const EoS_GUESS_t EoS_GuessHTilde, 
+                               const EoS_DP2C_t EoS_DensPres2CSqr, const EoS_GUESS_t EoS_GuessHTilde,
                                const EoS_H2TEM_t EoS_HTilde2Temp, const EoS_TEM2C_t EoS_Temper2CSqr,
                                const double EoS_AuxArray_Flt[], const int EoS_AuxArray_Int[], const real* const EoS_Table[EOS_NTABLE_MAX] )
 {
@@ -76,7 +76,7 @@ void Hydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In[]
    real PL[NCOMP_TOTAL], PR[NCOMP_TOTAL]; /* primitive vars. */
    real Fl[NCOMP_TOTAL], Fr[NCOMP_TOTAL];
    real Fhll[NCOMP_TOTAL];
- 
+
 
    real cslsq, csrsq, gammasql, gammasqr;
    real ssl, ssr, lmdapl, lmdapr, lmdaml, lmdamr, lmdatlmda;
@@ -87,10 +87,10 @@ void Hydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In[]
 
 
 /*  1. compute primitive vars. from conserved vars. */
-    Hydro_Con2Pri( L, PL, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL, 
+    Hydro_Con2Pri( L, PL, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL,
                   (real)NULL_REAL, NULL, NULL, EoS_GuessHTilde, EoS_HTilde2Temp,
                   EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL, &lFactor );
-       
+
     Hydro_Con2Pri( R, PR, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL,
                   (real)NULL_REAL, NULL, NULL, EoS_GuessHTilde, EoS_HTilde2Temp,
                   EoS_AuxArray_Flt, EoS_AuxArray_Int, EoS_Table, NULL, &rFactor );
@@ -142,7 +142,7 @@ void Hydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In[]
 
     real lV3s = lV3*lV3;
     real rV3s = rV3*rV3;
- 
+
     real __gammasql = (real)1.0 / gammasql;
     real __gammasqr = (real)1.0 / gammasqr;
 
@@ -161,8 +161,8 @@ void Hydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In[]
 
     lmdal = FMIN(lmdaml, lmdamr); /* Mignone Eq 21 */
     lmdar = FMAX(lmdapl, lmdapr);
-     
-/*  4. compute HLL flux using Mignone Eq 11 (necessary for computing lmdas (Eq 18) 
+
+/*  4. compute HLL flux using Mignone Eq 11 (necessary for computing lmdas (Eq 18)
  *     compute HLL conserved quantities using Mignone eq 9
  *  */
       Fl[0] = L[0] * lV1;
@@ -185,7 +185,7 @@ void Hydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In[]
       Fr[4] = R[1];
 #    endif
 // * 7. Determine intercell flux according to Mignone 13
-// 
+//
    if( lmdal >= (real)0.0 ){ /* Fl */
      /* intercell flux is left flux */
      Flux_Out[0] = Fl[0];
@@ -200,7 +200,7 @@ void Hydro_RiemannSolver_HLLE( const int XYZ, real Flux_Out[], const real L_In[]
    else if( lmdal < (real)0.0 && lmdar > (real)0.0 ){ /* Fs */
 //  5. Compute HLL flux using Mignone Eq 11 (necessary for computing lmdas (Eq 18)
 //      Compute HLL conserved quantities using Mignone eq 9
- 
+
      ovlrmll = (real)1.0 / ( lmdar - lmdal );
      lmdatlmda = lmdal*lmdar;
 

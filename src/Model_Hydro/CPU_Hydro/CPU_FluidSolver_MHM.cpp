@@ -309,13 +309,13 @@ void CPU_FluidSolver_MHM(
 
    const char Max = 4;
    char iteration;
-   real AdaptiveMinModCoeff;                                                                                                             
-         
+   real AdaptiveMinModCoeff;
+
 #  ifdef __CUDACC__
    __shared__ char state;
-#  else  
+#  else
    char state;
-#  endif 
+#  endif
 
    state = 0;
 
@@ -492,15 +492,15 @@ void CPU_FluidSolver_MHM(
 
                int tid;
 #              ifdef OPNEMP
-               tid = omp_get_thread_num();                                           
+               tid = omp_get_thread_num();
 #              else
                tid = 0;
 #              endif
-#              ifdef __CUDACC__                                                             
+#              ifdef __CUDACC__
                if ( tid == 0 && threadIdx.x == 0 && state == 1 )
-#              else                              
+#              else
                if ( MPI_Rank == 0 && tid == 0 && state == 1 )
-#              endif                                                                        
+#              endif
                  printf("iteration=%d, AdaptiveMinModCoeff=%13.10f\n", iteration, AdaptiveMinModCoeff );
 
 
@@ -535,10 +535,10 @@ void CPU_FluidSolver_MHM(
                                      NormPassive, NNorm, c_NormIdx, EoS_GuessHTilde_Func, EoS_HTilde2Temp_Func,
                                      EoS_Temp2HTilde_Func, c_EoS_AuxArray_Flt, c_EoS_AuxArray_Int,
                                      c_EoS_Table, &state);
- 
+
                iteration++;
- 
- 
+
+
             } while( state && iteration <= Max );
 
 

@@ -74,10 +74,10 @@ static int  jetSrc_lowRes_LEVEL;
        real  v_halo;
        real  distance_h;
 
-void Init_ExtPot_IsothermalSlab(); 
+void Init_ExtPot_IsothermalSlab();
 
 // =======================================================================================
-/*        G       A       C              */ 
+/*        G       A       C              */
 /*          ____________                 */
 /*          \     |     /                */
 /*           \   E|    /        z        */
@@ -109,8 +109,8 @@ static double   Jet_PrecessionAxis[3];   // cone orientation vector (x,y,z). i.e
 static double   Jet_BurstStartTime;      // start burst time in jet source
 static double   Jet_BurstEndTime;        // end burst time in jet source
 static double   Jet_Burst4VelRatio;      // increase 4-velocity     by a factor of `Jet_Burst4VelRatio` during `Jet_BurstStartTime` and `Jet_BurstEndTime`
-static double   Jet_BurstDensRatio;      // increase proper density by a factor of `Jet_BurstDensRatio` during `Jet_BurstStartTime` and `Jet_BurstEndTime` 
-static double   Jet_BurstTempRatio;      // increase temperature    by a factor of `Jet_BurstTempRatio` during `Jet_BurstStartTime` and `Jet_BurstEndTime` 
+static double   Jet_BurstDensRatio;      // increase proper density by a factor of `Jet_BurstDensRatio` during `Jet_BurstStartTime` and `Jet_BurstEndTime`
+static double   Jet_BurstTempRatio;      // increase temperature    by a factor of `Jet_BurstTempRatio` during `Jet_BurstStartTime` and `Jet_BurstEndTime`
 static bool     Flag_Burst4Vel;          // flag: burst 4-velocity
 static bool     Flag_BurstDens;          // flag: burst proper density
 static bool     Flag_BurstTemp;          // flag: burst temperature
@@ -224,9 +224,9 @@ void SetParameter()
 // load precission parameters
    ReadPara->Add( "Jet_AngularVelocity",     &Jet_AngularVelocity,      NoDef_double,          0.0,   NoMax_double    );
    ReadPara->Add( "Jet_PrecessionAngle",     &Jet_PrecessionAngle,      NoDef_double, NoMin_double,           90.0    );
-   ReadPara->Add( "Jet_PrecessionAxis_x",    &Jet_PrecessionAxis[0],    NoDef_double, NoMin_double,   NoMax_double    );               
-   ReadPara->Add( "Jet_PrecessionAxis_y",    &Jet_PrecessionAxis[1],    NoDef_double, NoMin_double,   NoMax_double    );  
-   ReadPara->Add( "Jet_PrecessionAxis_z",    &Jet_PrecessionAxis[2],    NoDef_double, NoMin_double,   NoMax_double    );  
+   ReadPara->Add( "Jet_PrecessionAxis_x",    &Jet_PrecessionAxis[0],    NoDef_double, NoMin_double,   NoMax_double    );
+   ReadPara->Add( "Jet_PrecessionAxis_y",    &Jet_PrecessionAxis[1],    NoDef_double, NoMin_double,   NoMax_double    );
+   ReadPara->Add( "Jet_PrecessionAxis_z",    &Jet_PrecessionAxis[2],    NoDef_double, NoMin_double,   NoMax_double    );
 
 // load uniform background parameters
    ReadPara->Add( "Amb_UniformDens",         &Amb_UniformDens,         -1.0,          Eps_double,     NoMax_double    );
@@ -269,12 +269,12 @@ void SetParameter()
       Amb_FluSphereRadius = NAN;
    }
 
-   
+
    if ( !Jet_TimeDependentSrc )
    {
      Jet_BurstDensRatio  = NAN;
      Jet_Burst4VelRatio  = NAN;
-     Jet_BurstTempRatio  = NAN; 
+     Jet_BurstTempRatio  = NAN;
      Jet_BurstStartTime  = NAN;
      Jet_BurstEndTime    = NAN;
    }
@@ -289,16 +289,16 @@ void SetParameter()
 
      if ( Jet_BurstEndTime <= Jet_BurstStartTime)
        Aux_Error( ERROR_INFO, "Jet_BurstEndTime <= Jet_BurstStartTime !!\n" );
-  
+
      if ( Jet_BurstEndTime >= END_T )
        Aux_Error( ERROR_INFO, "Jet_BurstEndTime >= END_T !!\n" );
-  
+
      if ( Flag_Burst4Vel && Jet_Burst4VelRatio <= Eps_double )
        Aux_Error( ERROR_INFO, "Jet_Burst4VelRatio <= Eps_double !!\n" );
-  
+
      if ( Flag_BurstDens && Jet_BurstDensRatio <= Eps_double )
        Aux_Error( ERROR_INFO, "Jet_BurstDensRatio <= Eps_double !!\n" );
-  
+
      if ( Flag_BurstTemp && Jet_BurstTempRatio <= Eps_double )
        Aux_Error( ERROR_INFO, "Jet_BurstTempRatio <= Eps_double !!\n" );
    }
@@ -364,28 +364,28 @@ void SetParameter()
      IsothermalSlab_Center[0]          *= Const_kpc   / UNIT_L;
      IsothermalSlab_Center[1]          *= Const_kpc   / UNIT_L;
      IsothermalSlab_Center[2]          *= Const_kpc   / UNIT_L;
- 
+
      distance_h                         = Header[29];
      v_halo                             = Header[30];
 
      distance_h                        *= Const_kpc   / UNIT_L;
      v_halo                            *= 1.0         / UNIT_V;
-  
+
 
      gasDiskPeakDens                   /= UNIT_D;
 
-     ambientTemperature                = Header[20]; 
+     ambientTemperature                = Header[20];
      ambientTemperature               *= Const_kB/(ParticleMass*UNIT_V*UNIT_V);
 
      gasDiskTemperature                = Header[18];
      gasDiskTemperature               *= Const_kB/(ParticleMass*UNIT_V*UNIT_V);
    }
-   
+
 
    Amb_UniformTemp          *= Const_kB    / (ParticleMass*Const_c*Const_c);
    Jet_AngularVelocity      *= 1.0;    // the unit of Jet_AngularVelocity is UNIT_T
 
-   
+
    if ( Amb_FluSphereRadius > 0.0 )
    {
       Amb_FluSphereRadius   *= Const_kpc / UNIT_L;
@@ -494,7 +494,7 @@ void SetParameter()
      Aux_Message( stdout, "  Jet_PrecessionAxis[z]    = %14.7e\n",            Jet_PrecessionAxis[2]                           );
    }
 
-   if ( Amb_FluSphereRadius > 0.0 && MPI_Rank == 0 ) 
+   if ( Amb_FluSphereRadius > 0.0 && MPI_Rank == 0 )
    {
      Aux_Message( stdout, "  Amb_FluSphereRadius      = %14.7e kpc\n",        Amb_FluSphereRadius*UNIT_L/Const_kpc           );
 
@@ -618,7 +618,7 @@ void SetArray()
         if ( 4*NX*NY*NZ <= c && c < 5*NX*NY*NZ ) Pres[i][j][k] = Ptr[c];
 
       }
-  
+
       Ptr += 5*NX*NY*NZ;
       for (int c=0;c<NX;c++) X[c] = Ptr[c];
 
@@ -643,7 +643,7 @@ void Interpolation_UM_IC( real x, real y, real z, real *Pri )
   real dz = Header[28];
 
   real dxyz[3] = {dx, dy, dz};
- 
+
   int numGhost = (int)Header[25];
 
   int NX = Nx+2*numGhost;
@@ -714,7 +714,7 @@ real IsothermalSlab_Pot(real z)
   Pot /= SQR(IsothermalSlab_VelocityDispersion);
   Pot  = log(cosh(z*sqrt(Pot)));
   Pot *= 2.0*SQR(IsothermalSlab_VelocityDispersion);
-  
+
   // 2. log potential
   Log  = SQR(v_halo) * log(z*z + SQR(distance_h));
   Log -= SQR(v_halo) * log(SQR(distance_h));
@@ -764,7 +764,7 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
        Interpolation_UM_IC( xc, yc, zc, Pri);
 
        if ( SRHD_CheckUnphysical( NULL, Pri,
-                                  EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt,                              
+                                  EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt,
                                   EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  ) ) exit(0);
      }
      else{
@@ -781,16 +781,16 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
          exit(0);
        }
 
-       real ambientPeakDens  = gasDiskPeakDens / Dens_gDisk_ambient; 
-      
+       real ambientPeakDens  = gasDiskPeakDens / Dens_gDisk_ambient;
+
        if (fabs(zc) > IsothermalSlab_Truncation)
            ambientDens  = -IsothermalSlab_Pot(IsothermalSlab_Truncation)/ambientTemperature;
-       else 
+       else
            ambientDens  = -IsothermalSlab_Pot(zc)/ambientTemperature;
 
        ambientDens  = exp(ambientDens);
        ambientDens *= ambientPeakDens;
-   
+
        Pri[0] = ambientDens;
        Pri[1] = 0.0;
        Pri[2] = 0.0;
@@ -798,7 +798,7 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
        Pri[4] = ambientDens*ambientTemperature;
 
        if ( SRHD_CheckUnphysical( NULL, Pri,
-                                  EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt,                              
+                                  EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt,
                                   EoS_AuxArray_Int, h_EoS_Table,  __FUNCTION__, __LINE__, true  ) ) exit(0);
      }
 #  endif
@@ -841,7 +841,7 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
 //                false : This cell has not been reset
 //
 // =======================================================================================
-/*        G       A       C              */ 
+/*        G       A       C              */
 /*          ____________                 */
 /*          \     |     /                */
 /*           \   E|    /        z        */
@@ -899,12 +899,12 @@ bool Flu_ResetByUser_Jets( real fluid[], const double x, const double y, const d
 
   if ( Jet_HalfOpeningAngle != 0.0 )
   {
-   InsideUpperCone &= SQR(xp[0]) + SQR(xp[1]) + SQR(xp[2] + Jet_Radius/tan(Jet_HalfOpeningAngle)) 
+   InsideUpperCone &= SQR(xp[0]) + SQR(xp[1]) + SQR(xp[2] + Jet_Radius/tan(Jet_HalfOpeningAngle))
                    <= SQR(Jet_HalfHeight+Jet_Radius/tan(Jet_HalfOpeningAngle));
 
-   InsideUpperCone &= 0.0 <= xp[2]; 
+   InsideUpperCone &= 0.0 <= xp[2];
 
-   InsideLowerCone &= SQR(xp[0]) + SQR(xp[1]) + SQR(xp[2] - Jet_Radius/tan(Jet_HalfOpeningAngle)) 
+   InsideLowerCone &= SQR(xp[0]) + SQR(xp[1]) + SQR(xp[2] - Jet_Radius/tan(Jet_HalfOpeningAngle))
                    <= SQR(Jet_HalfHeight+Jet_Radius/tan(Jet_HalfOpeningAngle));
 
    InsideLowerCone &= xp[2] <= 0.0;
@@ -918,7 +918,7 @@ bool Flu_ResetByUser_Jets( real fluid[], const double x, const double y, const d
 
 
   // set fluid variable inside source
-  if ( ( InsideUpperCone && ( Jet_Fire == 1 || Jet_Fire == 3 ) ) 
+  if ( ( InsideUpperCone && ( Jet_Fire == 1 || Jet_Fire == 3 ) )
 	|| ( InsideLowerCone && ( Jet_Fire == 2 || Jet_Fire == 3 ) ) )
   {
     if ( Jet_HalfOpeningAngle == 0.0 )
@@ -999,22 +999,22 @@ static bool Flag_Region( const int i, const int j, const int k, const int lv, co
       const double Pos[3] = { amr->patch[0][lv][PID]->EdgeL[0] + (i+0.5)*dh,  // x,y,z position
                               amr->patch[0][lv][PID]->EdgeL[1] + (j+0.5)*dh,
                               amr->patch[0][lv][PID]->EdgeL[2] + (k+0.5)*dh  };
-   
+
       bool Flag = false;
-   
-      const double Center[3]      = { 0.5*amr->BoxSize[0], 
-                                      0.5*amr->BoxSize[1], 
+
+      const double Center[3]      = { 0.5*amr->BoxSize[0],
+                                      0.5*amr->BoxSize[1],
                                       0.5*amr->BoxSize[2] };
-   
-      const double dr[3]          = { Pos[0]-Center[0]-Jet_CenOffset[0], 
-                                      Pos[1]-Center[1]-Jet_CenOffset[1], 
+
+      const double dr[3]          = { Pos[0]-Center[0]-Jet_CenOffset[0],
+                                      Pos[1]-Center[1]-Jet_CenOffset[1],
                                       Pos[2]-Center[2]-Jet_CenOffset[2] };
-   
+
       //const double r              = sqrt( SQR(dr[0]) + SQR(dr[1]) + SQR(dr[2]) );
       const double R              = sqrt( SQR(dr[0]) + SQR(dr[1]) );
-   
+
       //const double ShellThickness = 16*amr->dh[3];
-      
+
 
       Flag = R > gasDisk_highResRadius && lv > gasDisk_lowRes_LEVEL && fabs(dr[2]) < 2.0*interfaceHeight;
 
@@ -1034,14 +1034,14 @@ bool Flag_User( const int i, const int j, const int k, const int lv, const int P
                           amr->patch[0][lv][PID]->EdgeL[1] + (j+0.5)*dh,
                           amr->patch[0][lv][PID]->EdgeL[2] + (k+0.5)*dh  };
 
-  const double Center[3]      = { Jet_Center[0], 
-                                  Jet_Center[1], 
+  const double Center[3]      = { Jet_Center[0],
+                                  Jet_Center[1],
                                   Jet_Center[2] };
 
   const double dR[3]          = { Pos[0]-Center[0], Pos[1]-Center[1], Pos[2]-Center[2] };
   const double R              = sqrt( SQR(dR[0]) + SQR(dR[1]) + SQR(dR[2]) );
 
-  
+
   bool Flag, Disk, Bubble, Src;
 
   Disk     = fabs(dR[2]) <= dh*1.8;
@@ -1104,7 +1104,7 @@ double Mis_GetTimeStep_User( const int lv, const double dTime_dt )
    double Jet_Src3Vel = Jet_SrcVel / Jet_SrcGamma;
 
    double dh  = amr->dh[MAX_LEVEL];
-   
+
    double Cs      = 0.182574; // 1.0/sqrt(3);
    double dt_user = DT__FLUID * dh /(Jet_Src3Vel+3.0*Cs);
 

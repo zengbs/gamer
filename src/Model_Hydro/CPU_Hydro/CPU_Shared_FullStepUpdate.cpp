@@ -172,7 +172,7 @@ void Hydro_FullStepUpdate( const real g_Input[][ CUBE(FLU_NXT) ], real g_Output[
                                EoS_Table, __FUNCTION__, __LINE__, false ))
       {
 #       ifdef __CUDACC__
-        atomicOr ( (int*)state, 1); 
+        atomicOr ( (int*)state, 1);
 #       else
         *state = *state | 1;
 #       endif
@@ -183,8 +183,8 @@ void Hydro_FullStepUpdate( const real g_Input[][ CUBE(FLU_NXT) ], real g_Output[
 #     ifdef __CUDACC__
       __syncthreads();
 #     endif
- 
-//    return all threads within a block 
+
+//    return all threads within a block
       if ( *state == 1 )     return;
 
 
