@@ -745,7 +745,9 @@ void Output_DumpData_Total_HDF5( const char *FileName )
    real (*MomZ) [PS1][PS1][PS1]      = NULL;
    real (*Engy) [PS1][PS1][PS1]      = NULL;
    real (*Temp) [PS1][PS1][PS1]      = NULL;
+   real (*Pres) [PS1][PS1][PS1]      = NULL;
    real Cons[NCOMP_FLUID];
+   real Prim[NCOMP_FLUID];
 #  endif
 
 
@@ -765,7 +767,9 @@ void Output_DumpData_Total_HDF5( const char *FileName )
 
 #  ifdef SRHD
    int TempDumpIdx = -1; // dump index for temperature
+   int PresDumpIdx = -1; // dump index for pressure
    TempDumpIdx = NFieldOut ++;
+   PresDumpIdx = NFieldOut ++;
 #  endif
 
 #  ifdef GRAVITY
@@ -810,6 +814,7 @@ void Output_DumpData_Total_HDF5( const char *FileName )
 
 #  ifdef SRHD
     sprintf( FieldName[TempDumpIdx], "Temp" );
+    sprintf( FieldName[PresDumpIdx], "Pres" );
 #  endif
 
 
@@ -957,6 +962,7 @@ void Output_DumpData_Total_HDF5( const char *FileName )
             MomZ      = new real [ amr->NPatchComma[lv][1] ][PS1][PS1][PS1];
             Engy      = new real [ amr->NPatchComma[lv][1] ][PS1][PS1][PS1];
             Temp      = new real [ amr->NPatchComma[lv][1] ][PS1][PS1][PS1];
+            Pres      = new real [ amr->NPatchComma[lv][1] ][PS1][PS1][PS1];
 #           endif
 
             for (int v=0; v<NFieldOut; v++)
@@ -1058,10 +1064,14 @@ void Output_DumpData_Total_HDF5( const char *FileName )
 	              Cons[3] = MomZ[PID][i][j][k];
 	              Cons[4] = Engy[PID][i][j][k];
 
-                  Temp[PID][i][j][k] =  Hydro_Con2Temp( Cons[0], Cons[1], Cons[2], Cons[3], Cons[4], 
-                                                        NULL, NULL_BOOL, NULL_REAL, NULL_REAL, NULL,
-                                                        EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr,
-                                                        EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table );
+
+                 Hydro_Con2Pri( Cons, Prim, (real)NULL_REAL, NULL_BOOL, NULL_INT, NULL, NULL_BOOL,                               
+                                 (real)NULL_REAL, EoS_DensEint2Pres_CPUPtr, EoS_DensPres2Eint_CPUPtr,
+                                 EoS_GuessHTilde_CPUPtr, EoS_HTilde2Temp_CPUPtr, EoS_AuxArray_Flt,
+                                 EoS_AuxArray_Int, h_EoS_Table, NULL, NULL );
+
+                 Temp[PID][i][j][k] = Prim[4]/Prim[0];
+                 Pres[PID][i][j][k] = Prim[4];
                }
 
 //             copy conserved data and temperature into FieldData
@@ -1093,8 +1103,12 @@ void Output_DumpData_Total_HDF5( const char *FileName )
 	                     for ( int PID=0;PID < amr->NPatchComma[lv][1];PID++)
 	                           memcpy( FieldData[PID], Temp[PID], FieldSizeOnePatch );
 	                    break;
+	                  case 6:
+	                     for ( int PID=0;PID < amr->NPatchComma[lv][1];PID++)
+	                           memcpy( FieldData[PID], Pres[PID], FieldSizeOnePatch );
+	                    break;
 #                     ifdef GRAVITY
-                      case 6:
+                      case 7:
                          for (int PID=0; PID<amr->NPatchComma[lv][1]; PID++)
                             memcpy( FieldData[PID], amr->patch[ amr->PotSg[lv] ][lv][PID]->pot, FieldSizeOnePatch );
                         break;
@@ -1124,6 +1138,7 @@ void Output_DumpData_Total_HDF5( const char *FileName )
             delete [] MomZ;
             delete [] Engy;
             delete [] Temp;
+            delete [] Pres;
 #           endif
 
             H5_Status = H5Sclose( H5_MemID_Field );
